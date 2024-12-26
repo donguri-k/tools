@@ -140,7 +140,7 @@
     // too fast対策の待機
     async function waitRemainingTime(startTime) {
       const elapsed = Date.now() - startTime;
-      const remaining = 800 - elapsed;
+      const remaining = 1000 - elapsed;
       if (remaining > 0) {
         await new Promise(resolve => setTimeout(resolve, remaining));
       }
