@@ -224,7 +224,7 @@
                 forceStop(error);
                 break;
               }
-
+              /*
               // 残りを分解
               try {
                 const response = await fetch('https://donguri.5ch.net/recycleunlocked', {method: 'POST'});
@@ -235,6 +235,7 @@
                 forceStop(error);
                 break;
               }
+              */
             }
             chestCount++;
             count.textContent = chestCount;
