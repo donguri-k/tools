@@ -274,7 +274,7 @@
             return {
               name: match[1].trim(),
               elems: match[2] 
-                ? match[2].replace('無', 'なし').split('')
+                ? match[2].replace('無', 'な').split('')
                 : null,
             };
           })
@@ -297,7 +297,7 @@
   
         for (const pattern of patterns) {
           if (!itemName.includes(pattern.name)) continue;
-          if (pattern.elems && !pattern.elems.includes(itemElem)) continue;
+          if (pattern.elems && !pattern.elems.some(e=>itemElem.includes(e))) continue;
           results.push(link);
           break;
         }
