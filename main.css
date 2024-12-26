@@ -1,0 +1,42 @@
+body, dialog {
+  background-color: #222;
+  color: #ddd;
+}
+
+input,select,textarea {
+  background-color: #282828;
+  color: #ddd;
+}
+
+p {
+  margin: 4px;
+}
+
+a:link {
+  color: #8cb4ff;
+}
+a:hover {
+  color: #8cb4ff;
+  text-decoration: none;
+}
+a:visited {
+  color: #ffaaff
+}
+a:active {
+  color: #ffffff;
+  background-color: #8cb4ff;
+}
+input:hover, select:hover, textarea:hover,
+input:focus, select:focus, textarea:focus
+{
+  background-color: #333;
+}
+
+label {
+  white-space: nowrap;
+}
+
+code {
+  background: #333;
+  border: solid 0.5px #888;
+}
