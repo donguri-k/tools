@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <link rel="stylesheet" href="./css/main.css">
+    <title>donguri Chest Opener</title>
+  </head>
+  <body>
+    <div class="wrapper">
+      <h1>donguri Chest Opener</h1>
+      <h2>▼Script</h2>
+      <div class="container">
+        <p>Userscript版</p>
+        <a href="script/donguri-chest-opener.js">https://donguri-k.github.io/tools/script/chest-opener.js</a>
+        <p>Bookmarklet版</p>
+        <textarea id="textarea" readonly style="width:100%">javascript:((d,j,s)=>{s=d.createElement('script');s.src=j;d.body.appendChild(s);})(document,'https://donguri-k.github.io/tools/script/chest_opener_b.js');</textarea>
+        <div id="how-to-use">
+          <h2>▼使い方</h2>
+          <h3>～Userscript版の場合～</h3>
+          <p>PCブラウザの場合は拡張機能Tampermonkeyをインストールし、上記のURLからインポート または scriptをコピーして保存する。</p>
+          <p>スマートフォンの場合はUserscript対応のブラウザを使用するか、拡張機能対応のブラウザでPCと同様にTampermonkeyをインストール。</p>
+          <h3>～Bookmarklet版の場合～</h3>
+          <p>上記のscriptをコピーし、名前を付けてブックマークに保存する。</p>
+          <p>アイテムバッグか宝箱のページで実行。（AndroidのChromium系はURL欄にブックマークレット名前を入力しないと使えない。iOSは知らん）</p>
+          <h2>▼説明</h2>
+          <p>宝箱とアイテムバッグのページで動作する。（他のページでも動くが、ページによってはレイアウトが崩れるので推奨しない）</p>
+          <p>残したいレアリティにチェックを入れると、そのアイテムをロックする。</p>
+          <p>入力欄にアイテム名を指定すると各レアリティごとに絞り込み可能。（部分一致）<code>,</code>区切りで複数指定可。名前の後に<code>[]</code>で属性指定</p>
+          <ul>
+            <li>[SSR]欄に<code>F5アタック, どんぐりかたびら</code>で[SSR]のF5アタックとどんぐりかたびら</li>
+            <li><code>花火[風火]</code>で風か火属性の花火。属性なしは<code>[無]</code>または<code>[な]</code></li>
+            <li><code>【武器】[無風火]</code>で属性なしor風・火の武器全般</li>
+          </ul>
+          <p>（<code>木の鎧</code>だと硬化木の鎧もヒットするが、今のところ対策は考えていない。）</p>
+          <p>回数無制限の場合はバッグ上限か鍵不足で開けられなくなるまで。</p>
+          <p>分解しないモードにチェックを入れると、アイテムのチェックはせずに箱開けのみを行う。</p>
+          <p></p>
+          <h2>▼注意事項</h2>
+          <p>元々持っているアイテムもロックされていないものは分解される。</p>
+          <p>アイテムバッグのレイアウトや箱開けの仕様が変更される等で使えなくなる可能性あり。</p>
+          <p>その際、ロックが機能しなくなる場合もあり、最悪重要なアイテムをロストするリスクもあるので自己責任で。</p>
+          <p>scriptのミスでアイテムがロックされないことがあっても責任は負えないので承知のこと。</p>
+          <p>不具合があれば報告求む。too fastや不明なエラーが出た場合も要報告。</p>
+          <h2>▼UserscriptとBookmarkletの比較</h2>
+          <p>Userscriptはインストールの手間があるが、以降は自動で実行される。読み込みも不要。</p>
+          <p>Bookmarkletはscriptの読み込みが発生するが、必要な時だけ使用可能。また、アップデート時に手動で更新する必要が無い。（ただし、キャッシュが残っていると更新されない可能性あり）</p>
+          <p>どちらも機能に差はない。更新頻度は高くないと思われるので、好きな方を使うと良いだろう。</p>
+        </div>
+        <div id="update">
+          <h2>▼更新履歴</h2>
+          <dl>
+            <dt>v1.1a - 2024/12/27</dt>
+            <dd>アイテム名と属性のフィルター機能実装。</dd>
+            <dd>箱開けのみのモード実装。</dd>
+            <dd>Bookmarklet版は最初から展開するようにした。</dd>
+            <dd>不具合修正及びエラー処理の変更。</dd>
+            <dd>githubページ開設。</dd>
+            <dt>v1.0 - 2024/12/09</dt>
+            <dd>初回リリース</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+    <script>
+      document.querySelector('#textarea').addEventListener('click',event=>{
+        event.stopPropagation();
+        const text = event.target.textContent;
+        navigator.clipboard.writeText(text).then(alert('copy'));
+      })
+    </script>
+  </body>
+</html>
