@@ -298,7 +298,7 @@
   
         for (const pattern of patterns) {
           if (!itemName.includes(pattern.name)) continue;
-          if (pattern.elems && !pattern.elems.includes(itemElem)) continue;
+          if (pattern.elems && !pattern.elems.some(e=>itemElem.includes(e))) continue;
           results.push(link);
           break;
         }
