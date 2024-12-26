@@ -14,7 +14,7 @@
   details.classList.add('chest-opener');
   details.style.background = '#ddd';
   const summary = document.createElement('summary');
-  summary.textContent = 'Chest Opener v1.1';
+  summary.textContent = 'Chest Opener v1.1a';
 
   const options = document.createElement('div');
   const label_recycle = document.createElement('label');
@@ -59,6 +59,10 @@
       }
     })
   };
+  const itemDescription = document.createElement('p');
+  itemDescription.innerHTML = '&quot;,&quot;区切りでアイテム名の指定が可能。アイテム名[属性]で対象の属性も指定。<br>例: どんぐり大砲[火風], どんぐりかたびら<br>属性なしは[無]か[な]。詳細は<a href="https://donguri-k.github.io/tools/chest-opener" target="_blank">こちら</a>を参照';
+  itemDescription.style.fontSize = '14px';
+  itemSettings.append(itemDescription);
 
   const loopSelect = document.createElement('div');
   const loops_ = document.createElement('p');
@@ -336,5 +340,3 @@
     }
   }
 })();
-
-
