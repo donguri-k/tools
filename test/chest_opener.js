@@ -275,7 +275,7 @@
             return {
               name: match[1].trim(),
               elems: match[2] 
-                ? match[2].replace('無', 'なし').split('')
+                ? match[2].replace('無', 'な').split('')
                 : null,
             };
           })
