@@ -158,7 +158,7 @@
       try {
         const response = await fetch('https://donguri.5ch.net/open', {
           method: 'POST',
-          body: 'chestsize=B70', /* 小: A65, 大: B70 */
+          body: 'chestsize=A65', /* 小: A65, 大: B70 */
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded'
           }
