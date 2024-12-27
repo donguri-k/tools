@@ -37,8 +37,8 @@
   let currentFilter = null;
   function tableFilter(table){
     table.addEventListener('click', (event) => {
-      const cell = event.target;
-      if (cell.tagName !== 'TD' || cell.cellIndex !== 0) return;
+      const cell = event.target.closest('td');
+      if (!cell || cell.cellIndex !== 0) return;
   
       const filterText = cell.textContent;
       const rows = table.querySelectorAll('tbody tr');
