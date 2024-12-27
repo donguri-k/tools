@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         donguri bag optimizer
-// @version      1.0a
+// @version      1.0b
 // @description  donguri bag
 // @author       7234e634
 // @match        https://donguri.5ch.net/bag
@@ -35,6 +35,8 @@
   const armorTable = document.querySelector('#armorTable');
 
   let currentFilter = null;
+  let scrollPosition = 0;
+
   function tableFilter(table){
     table.addEventListener('click', (event) => {
       const cell = event.target.closest('td');
@@ -47,15 +49,21 @@
       if (currentFilter === filterText) {
         rows.forEach((row) => (row.style.display = ''));
         currentFilter = null;
+        window.scrollTo({top: scrollPosition, behavior: 'instant'})
         return;
       }
   
-      // 新しいフィルタを適用
+      // scroll記憶
+      scrollPosition = window.scrollY;
+
+      // フィルタ適用
       rows.forEach((row) => {
         const itemName = row.cells[0].textContent;
         row.style.display = itemName === filterText ? '' : 'none';
       });
       currentFilter = filterText;
+
+      table.scrollIntoView({behavior: 'instant'});
     });
   }
     
