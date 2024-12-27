@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         donguri Chest Opener
-// @version      1.1a
+// @version      1.1c
 // @description  Automated box opening and recycling
 // @author       7234e634
 // @match        https://donguri.5ch.net/bag
@@ -10,10 +10,11 @@
 (()=>{
   const container = document.createElement('div');
   const details = document.createElement('details');
+  details.open = true; /* bookmarklet用 true */
   details.classList.add('chest-opener');
   details.style.background = '#ddd';
   const summary = document.createElement('summary');
-  summary.textContent = 'Chest Opener v1.1a';
+  summary.textContent = 'Chest Opener v1.1c';
 
   const options = document.createElement('div');
   const label_recycle = document.createElement('label');
@@ -219,12 +220,12 @@
             if(!shouldNotRecycle.checked){
               // アイテムロック
               try {
-                itemLocking(doc);
+                await itemLocking(doc);
               } catch (error) {
                 forceStop(error);
                 break;
               }
-              /*
+
               // 残りを分解
               try {
                 const response = await fetch('https://donguri.5ch.net/recycleunlocked', {method: 'POST'});
@@ -235,7 +236,6 @@
                 forceStop(error);
                 break;
               }
-              */
             }
             chestCount++;
             count.textContent = chestCount;
@@ -257,7 +257,7 @@
     btn.disabled = false;
   })
 
-  function itemLocking(doc) {
+  async function itemLocking(doc) {
     const itemLockLinks = doc.querySelectorAll('a[href^="https://donguri.5ch.net/lock/"]');
     const checkedRanks = Array.from(document.querySelectorAll('.keep-item:checked')).map(elm => elm.value);
   
@@ -305,12 +305,14 @@
       });
     });
   
-    results.forEach(async link => {
+    const promises = results.map(async (link) => {
       const response = await fetch(link.href,{method:'GET'});
       if (!response.ok) {
         throw new Error('Failed to lock item');
       }
-    })
+    });
+
+    await Promise.all(promises);
   }
 
   function saveInputData(){
@@ -340,6 +342,3 @@
     }
   }
 })();
-
-
-
