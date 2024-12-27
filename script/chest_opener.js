@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         donguri Chest Opener
-// @version      1.1b
+// @version      1.1c
 // @description  Automated box opening and recycling
 // @author       7234e634
 // @match        https://donguri.5ch.net/bag
@@ -10,10 +10,11 @@
 (()=>{
   const container = document.createElement('div');
   const details = document.createElement('details');
+  //details.open = true; /* bookmarklet用 true */
   details.classList.add('chest-opener');
   details.style.background = '#ddd';
   const summary = document.createElement('summary');
-  summary.textContent = 'Chest Opener v1.1b';
+  summary.textContent = 'Chest Opener v1.1c';
 
   const options = document.createElement('div');
   const label_recycle = document.createElement('label');
@@ -304,12 +305,14 @@
       });
     });
   
-    results.forEach(async link => {
+    const promises = results.map(async (link) => {
       const response = await fetch(link.href,{method:'GET'});
       if (!response.ok) {
         throw new Error('Failed to lock item');
       }
-    })
+    });
+
+    await Promise.all(promises);
   }
 
   function saveInputData(){
@@ -339,6 +342,3 @@
     }
   }
 })();
-
-
-
