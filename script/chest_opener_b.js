@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         donguri Chest Opener
-// @version      1.1c
+// @version      1.1d
 // @description  Automated box opening and recycling
 // @author       7234e634
 // @match        https://donguri.5ch.net/bag
@@ -14,7 +14,7 @@
   details.classList.add('chest-opener');
   details.style.background = '#ddd';
   const summary = document.createElement('summary');
-  summary.textContent = 'Chest Opener v1.1c';
+  summary.textContent = 'Chest Opener v1.1d';
 
   const options = document.createElement('div');
   const label_recycle = document.createElement('label');
@@ -141,7 +141,7 @@
     // too fast対策の待機
     async function waitRemainingTime(startTime) {
       const elapsed = Date.now() - startTime;
-      const remaining = 1000 - elapsed;
+      const remaining = 1200 - elapsed;
       if (remaining > 0) {
         await new Promise(resolve => setTimeout(resolve, remaining));
       }
