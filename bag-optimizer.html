@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <link rel="stylesheet" href="./css/main.css">
+    <link rel="icon" href="/tools/favicon.ico">
     <title>donguri Bag Optimizer</title>
   </head>
   <body>
@@ -13,43 +14,45 @@
     <div class="wrapper">
       <h1>donguri Bag Optimizer</h1>
       <div class="container">
-        <h2>▼Script v1.0b</h2>
-        <p>Userscript版</p>
-        <a href="script/bag_optimizer.js?v1.0b">https://donguri-k.github.io/tools/script/bag_optimizer.js</a>
-        <p>Bookmarklet版</p>
-        <textarea id="textarea" readonly style="width:100%">javascript:((d,j,s)=>{s=d.createElement('script');s.src=j;d.body.appendChild(s);})(document,'https://donguri-k.github.io/tools/script/bag_optimizer.js');</textarea>
-        <p><a href="https://donguri-k.github.io/tools/script/bag_optimizer.js">キャッシュ更新用</a> リンク先を開いてからリロード</p>
-      </div>
-    </div>
-    <div id="how-to-use">
-      <h2>▼使い方</h2>
-      <h3>～Userscript版の場合～</h3>
-      <p>PCブラウザの場合は拡張機能Tampermonkeyをインストールし、上記のURLからインポート または scriptをコピーして保存する。</p>
-      <p>スマートフォンの場合はUserscript対応のブラウザを使用するか、拡張機能対応のブラウザでPCと同様にTampermonkeyをインストール。</p>
-      <h3>～Bookmarklet版の場合～</h3>
-      <p>上記のscriptをコピーし、名前を付けてブックマークに保存する。</p>
-      <p>アイテムバッグか宝箱のページで実行。（AndroidのChromium系はURL欄にブックマークレット名前を入力しないと使えない。iOSは知らん）</p>
-      <h2>▼説明</h2>
-      <p>アイテムバッグの動作を、以下の通り追加変更する。</p>
-      <ul>
-        <li>[錠]/[解錠]のページ遷移をなくし、その場で実行する。</li>
-        <li>アイテム名をクリックすると、同名・同レアリティのアイテムだけを抽出する。もう一度クリックで解除。</li>
-      </ul>
-      <p>アイテムをロックする度にいちいちページをリロードするのが煩わしかったので作成した。</p>
-      <p>抽出機能は箱開け後に既存のアイテムと比較する用途を想定。特に、Chest Openerを使うと新規入手したアイテムがロックされるため、単純なソートでは既存のアイテムと見分けがつきにくい。</p>
-      <p>他にも追加してほしい機能があれば対応するかも。未定。</p>
-      <h2>▼注意事項</h2>
-      <p>余所のアイテムバッグのレイアウトを書き換えるscriptとは競合する可能性あり。</p>
-      <h2>▼UserscriptとBookmarkletの比較</h2>
-      <p>Bookmarklet版はわざわざ手動で起動する手間があるので、環境があるならUserscriptを推奨。</p>
-      <div id="update" style="font-size:13px">
-        <h2>▼更新履歴</h2>
-        <dl>
-          <dt>v1.0b - 2024/12/27</dt>
-          <dd>フィルター時のスクロール修正</dd>
-          <dt>v1.0a - 2024/12/27</dt>
-          <dd>初回リリース</dd>
-        </dl>
+        <div class="script">
+          <h2>▼Script v1.0b</h2>
+          <p>Userscript版</p>
+          <a href="script/bag_optimizer.js?v1.0b">https://donguri-k.github.io/tools/script/bag_optimizer.js</a>
+          <p>Bookmarklet版</p>
+          <textarea id="textarea" readonly style="width:100%">javascript:((d,j,s)=>{s=d.createElement('script');s.src=j;d.body.appendChild(s);})(document,'https://donguri-k.github.io/tools/script/bag_optimizer.js');</textarea>
+          <p><a href="https://donguri-k.github.io/tools/script/bag_optimizer.js">キャッシュ更新用</a> リンク先を開いてからリロード</p>
+        </div>
+        <div id="how-to-use">
+          <h2>▼使い方</h2>
+          <h3>～Userscript版の場合～</h3>
+          <p>PCブラウザの場合は拡張機能Tampermonkeyをインストールし、上記のURLからインポート または scriptをコピーして保存する。</p>
+          <p>スマートフォンの場合はUserscript対応のブラウザを使用するか、拡張機能対応のブラウザでPCと同様にTampermonkeyをインストール。</p>
+          <h3>～Bookmarklet版の場合～</h3>
+          <p>上記のscriptをコピーし、名前を付けてブックマークに保存する。</p>
+          <p>アイテムバッグか宝箱のページで実行。（AndroidのChromium系はURL欄にブックマークレット名前を入力しないと使えない。iOSは知らん）</p>
+          <h2>▼説明</h2>
+          <p>アイテムバッグの動作を、以下の通り追加変更する。</p>
+          <ul>
+            <li>[錠]/[解錠]のページ遷移をなくし、その場で実行する。</li>
+            <li>アイテム名をクリックすると、同名・同レアリティのアイテムだけを抽出する。もう一度クリックで解除。</li>
+          </ul>
+          <p>アイテムをロックする度にいちいちページをリロードするのが煩わしかったので作成した。</p>
+          <p>抽出機能は箱開け後に既存のアイテムと比較する用途を想定。特に、Chest Openerを使うと新規入手したアイテムがロックされるため、単純なソートでは既存のアイテムと見分けがつきにくい。</p>
+          <p>他にも追加してほしい機能があれば対応するかも。未定。</p>
+          <h2>▼注意事項</h2>
+          <p>余所のアイテムバッグのレイアウトを書き換えるscriptとは競合する可能性あり。</p>
+          <h2>▼UserscriptとBookmarkletの比較</h2>
+          <p>Bookmarklet版はわざわざ手動で起動する手間があるので、環境があるならUserscriptを推奨。</p>
+        </div>
+        <div id="update" style="font-size:13px">
+          <h2>▼更新履歴</h2>
+          <dl>
+            <dt>v1.0b - 2024/12/27</dt>
+            <dd>フィルター時のスクロール修正</dd>
+            <dt>v1.0a - 2024/12/27</dt>
+            <dd>初回リリース</dd>
+          </dl>
+        </div>
       </div>
     </div>
     <script>
