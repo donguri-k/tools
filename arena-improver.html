@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <link rel="stylesheet" href="./css/main.css">
+    <link rel="icon" href="/tools/favicon.ico">
+    <title>donguri Arena Improver</title>
+  </head>
+  <body>
+    <header>
+      <span><a href="/tools/">tools</a> &gt; arena-iprover</span>
+    </header>
+    <div class="wrapper">
+      <h1>donguri Arena Improver</h1>
+      <div class="container">
+        <div id="script">
+          <h2>▼Script v0.7a</h2>
+          <p>Userscript版</p>
+          <a href="script/arena_improver.js">https://donguri-k.github.io/tools/script/arena_improver.js</a>
+          <p>Bookmarklet版</p>
+          <textarea id="textarea" readonly style="width:100%">javascript:((d,j,s)=>{s=d.createElement('script');s.src=j;d.body.appendChild(s);})(document,'https://donguri-k.github.io/tools/script/arena_improver.js');</textarea>
+          <p><a href="https://donguri-k.github.io/tools/script/arena_improver.js">キャッシュ更新用</a> リンク先を開いてからリロード</p>
+        </div>
+        <div id="how-to-use">
+          <h2>▼使い方</h2>
+          <details>
+            <summary>Userscript版</summary>
+            <p>PCブラウザの場合は拡張機能Tampermonkeyをインストールし、上記のURLからインポート または scriptをコピーして保存する。</p>
+            <p>スマートフォンの場合はUserscript対応のブラウザを使用するか、拡張機能対応のブラウザでPCと同様にTampermonkeyをインストール。</p>
+          </details>
+          <details>
+            <summary>Bookmarklet版</summary>
+            <p>上記のscriptをコピーし、名前を付けてブックマークに保存する。</p>
+            <p>どんぐりチーム戦いのページで実行。（AndroidのChromium系はURL欄にブックマークレット名前を入力しないと使えない。iOSは知らん）</p>
+          </details>
+          <h2>▼説明</h2>
+          <p>とりあえず作成。まだまだ制作中。</p>
+          <p>「詳細取得/更新」でアリーナの制限とホルダーを表示、陣地の色と保有地域の更新</p>
+          <p>「陣地更新」で色と保有地域の情報を更新</p>
+          <p>※あまりにも短い間隔で詳細更新を連打しないよう。</p>
+        </div>
+        <div id="to-do">
+          <h2>▼ To Do</h2>
+          <ul>
+            <li>時間経過で自動更新に対応する（陣地情報のみ?）</li>
+            <li>装備のプリセットに対応</li>
+            <li>アリーナを同一ページ内で処理する</li>
+            <li>勝つまで自動で挑戦するボタン?</li>
+            <li>自動参加でトークンを稼ぐモード</li>
+            <li>その他 要望があれば順次</li>
+          </ul>
+        </div>
+        <div id="update" style="font-size:13px">
+          <h2>▼更新履歴</h2>
+          <dl>
+            <dt>v0.7a - 2025/01/04</dt>
+            <dd>初回リリース</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+    <script>
+      document.querySelector('#textarea').addEventListener('click',event=>{
+        event.stopPropagation();
+        const text = event.target.textContent;
+        navigator.clipboard.writeText(text).then(alert('copy'));
+      })
+    </script>
+  </body>
+</html>
