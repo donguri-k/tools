@@ -103,7 +103,7 @@
       let row = elm.dataset.row,
       col = elm.dataset.col,
       url = `https://donguri.5ch.net/teambattle?r=${row}&c=${col}`;
-      return fetch(url)
+      fetch(url)
       .then(res=>
         res.ok?res.text():Promise.reject('res.ng')
       )
