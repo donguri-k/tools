@@ -30,11 +30,12 @@
   const arenaField = document.createElement('dialog');
   arenaField.style.position = 'fixed';
   arenaField.style.width = '100%';
-  arenaField.style.bottom = '0';
+  arenaField.style.bottom = '10px';
   arenaField.style.height = '320px';
   arenaField.style.background = '#fff';
   arenaField.style.color = '#000';
   arenaField.style.border = 'solid 1px #000';
+  arenaField.style.margin = '0';
   (()=>{
     const closeButton = document.createElement('button');
     closeButton.textContent = '×';
