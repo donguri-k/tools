@@ -123,8 +123,7 @@
       newTables.forEach((table,i) => {
         tables[i].replaceWith(table);
       })
-
-    })
+    }).catch(e=>console.log(e))
   }
   async function getArenaInfo(){
     await refreshAreaInfo();
@@ -137,7 +136,7 @@
       let row = elm.dataset.row,
       col = elm.dataset.col,
       url = `https://donguri.5ch.net/teambattle?r=${row}&c=${col}`;
-      return fetch(url)
+      fetch(url)
       .then(res=>
         res.ok?res.text():Promise.reject('res.ng')
       )
@@ -167,11 +166,15 @@
             table.style.transform = 'scale(0.8)';
             table.style.transformOrigin = 'top left';
             arenaField.querySelector('table').replaceWith(table);
+            const forms = table.querySelectorAll('form');
+            forms.forEach(form => {
+              form.target = '_blank';
+            })
           })
           arenaField.show();
-        }),
+        });
         elm.replaceWith(cell)}
-      )
+      ).catch(e=>console.log(e))
       }
     )
   }
