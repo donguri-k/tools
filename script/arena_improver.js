@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         donguri Arena Improver
-// @version      0.7a
+// @version      0.7b
 // @description  fix arena ui
 // @author       7234e634
 // @match        https://donguri.5ch.net/teambattle
@@ -16,7 +16,7 @@
   topbar.style.top = '0';
   topbar.style.border = 'solid 1px #000';
   topbar.style.textAlign = 'right';
-  
+
   const cellButton = document.createElement('button');
   cellButton.textContent = '詳細取得/更新';
   cellButton.addEventListener('click',getArenaInfo);
@@ -93,6 +93,7 @@
     })
   }
   function getArenaInfo(){
+    refreshAreaInfo();
     let br = document.createElement('br');
     grid.style.gridTemplateRows = grid.style.gridTemplateRows.replace('35px','65px'),
     grid.style.gridTemplateColumns = grid.style.gridTemplateColumns.replace('35px','105px'),
@@ -123,7 +124,6 @@
         cell.style.borderWidth = '3px';
         cell.onclick=()=>{open(url,'_blank')},elm.replaceWith(cell)}
       )
-      .then(refreshAreaInfo());
       }
     )
   }
