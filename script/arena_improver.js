@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         donguri Arena Improver
-// @version      0.7b
+// @version      0.7c
 // @description  fix arena ui
 // @author       7234e634
 // @match        https://donguri.5ch.net/teambattle
