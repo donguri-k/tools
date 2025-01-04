@@ -92,8 +92,8 @@
 
     })
   }
-  function getArenaInfo(){
-    refreshAreaInfo();
+  async function getArenaInfo(){
+    await refreshAreaInfo();
     let br = document.createElement('br');
     grid.style.gridTemplateRows = grid.style.gridTemplateRows.replace('35px','65px'),
     grid.style.gridTemplateColumns = grid.style.gridTemplateColumns.replace('35px','105px'),
