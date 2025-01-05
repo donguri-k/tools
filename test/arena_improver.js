@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         donguri Arena Improver
-// @version      0.9a test
+// @version      0.9a
 // @description  fix arena ui
 // @author       7234e634
 // @match        https://donguri.5ch.net/teambattle
@@ -8,6 +8,8 @@
 
 
 (()=>{
+  const vw = Math.min(document.documentElement.clientWidth, window.innerWidth || 0);
+
   const topbar = document.createElement('div');
   topbar.style.width = '100%';
   topbar.style.height = '48px';
@@ -27,16 +29,15 @@
   refreshButton.addEventListener('click',refreshAreaInfo);
   refreshButton.style.marginLeft = '2px';
 
-  const sortLabel = document.createElement('label');
-  sortLabel.style.display = 'inline-block';
   const sortSelect = document.createElement('select');
+  sortSelect.style.maxWidth = '128px';
   let lastSelectedValue = sortSelect.value;
 
   (()=>{
     const option1 = document.createElement('option');
     const option2 = document.createElement('option');
-    option1.textContent = 'デフォルト';
-    option2.textContent = '装備制限';
+    option1.textContent = 'デフォルト順';
+    option2.textContent = '装備制限順';
     option1.value = 'default';
     option2.value = 'cond';
     sortSelect.append(option1,option2);
@@ -45,12 +46,10 @@
 
     // 再選択を可能にする
     sortSelect.addEventListener('focus', () => lastSelectedValue = null);
-  
     sortSelect.addEventListener('mousedown', handleSelection);
     sortSelect.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') handleSelection();
     });
-  
     function handleSelection() {
       const currentValue = sortSelect.value;
       if (lastSelectedValue !== currentValue || lastSelectedValue === null) {
@@ -59,7 +58,6 @@
       }
     }
   })();
-  sortLabel.append('ソート: ', sortSelect);
 
   const arenaField = document.createElement('dialog');
   arenaField.style.position = 'fixed';
@@ -95,17 +93,28 @@
   arenaResult.style.height = '640px';
   arenaResult.style.background = '#fff';
   arenaResult.style.color = '#000';
+  arenaResult.style.fontSize = '80%';
   arenaResult.style.border = 'solid 1px #000';
   arenaResult.style.margin = '0';
   arenaResult.style.textAlign = 'left';
+  arenaResult.style.overflowY = 'auto';
   window.addEventListener('click', (event) => {
     if (!arenaResult.contains(event.target)) {
       arenaResult.close();
     }
   });
   arenaField.append(arenaResult);
-
-  topbar.append(sortLabel, refreshButton, cellButton);
+  (()=>{
+    if (vw < 768) {
+      sortSelect.style.fontSize = '60%';
+      cellButton.style.fontSize = '60%';
+      refreshButton.style.fontSize = '60%';
+    }
+    const div = document.createElement('div');
+    div.style.display = 'inline-block';
+    div.append(refreshButton, cellButton);
+    topbar.append(sortSelect, div);
+  })();
   document.body.append(topbar,arenaField);
 
   const grid = document.querySelector('.grid');
@@ -116,6 +125,7 @@
   table.parentNode.style.maxWidth = '100%';
   table.parentNode.style.overflow = 'auto';
   table.parentNode.style.height = '60vh';
+
   function scaleContentsToFit(container, contents){
     const containerWidth = container.clientWidth;
     const contentsWidth = contents.scrollWidth;
@@ -197,7 +207,6 @@
     grid.parentNode.style.height = null,
     grid.parentNode.style.padding = '20px 0';
     const cols = Number(grid.style.gridTemplateColumns.match(/repeat\((\d+),/)[1]);
-    const vw = Math.min(document.documentElement.clientWidth, window.innerWidth || 0);
     if (vw < 768 && cols > 8) {
       grid.style.gridTemplateColumns = 'repeat(8, 105px)';
     }
