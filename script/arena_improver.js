@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         donguri Arena Improver
-// @version      0.9a
+// @version      0.9b
 // @description  fix arena ui
 // @author       7234e634
 // @match        https://donguri.5ch.net/teambattle
@@ -132,6 +132,10 @@
     const scaleFactor = Math.min(1, containerWidth / contentsWidth);
     contents.style.transform = `scale(${scaleFactor})`;
     contents.style.transformOrigin = 'top left';
+
+    const scaledHeight = contents.scrollHeight * scaleFactor;
+  
+    contents.style.height = `${scaledHeight}px`;
   }
 
   scaleContentsToFit(grid.parentNode, grid);
@@ -151,14 +155,14 @@
       const cellColors = JSON.parse(validJsonStr);
 
       const newGrid = doc.querySelector('.grid');
-      const len = Number(newGrid.style.gridTemplateRows.match(/repeat\((\d+), 35px\)/)[1]);
-      console.log(len);
-      if(currentCells.length !== len**2){
+      const rows = Number(newGrid.style.gridTemplateRows.match(/repeat\((\d+), 35px\)/)[1]);
+      const cols = Number(newGrid.style.gridTemplateColumns.match(/repeat\((\d+), 35px\)/)[1]);
+      if(currentCells.length !== (rows * cols)){
         grid.style.gridTemplateRows = newGrid.style.gridTemplateRows;
         grid.style.gridTemplateColumns = newGrid.style.gridTemplateColumns;
         grid.innerHTML = '';
-        for (let i = 0; i < len; i++) {
-          for (let j = 0; j < len; j++) {
+        for (let i = 0; i < rows; i++) {
+          for (let j = 0; j < cols; j++) {
             const cell = document.createElement('div');
             cell.className = 'cell';
             cell.dataset.row = i;
@@ -226,7 +230,7 @@
         let cond = doc.querySelector('small')?.textContent || '';
         if(!cond) return Promise.reject(`cond.ng [${row}][${col}][${h1}]`);
         let holder = doc.querySelector('strong')?.textContent || '',
-        shortenCond = cond.replace('| [エリート]','e').replace('から','-').replace(/(まで|\[|\]|\||\s)/g,'');
+        shortenCond = cond.replace('[エリート]','e').replace('から','-').replace(/(まで|\[|\]|\||\s)/g,'');
         const p = [document.createElement('p'), document.createElement('p')];
         p[0].textContent = shortenCond;
         p[1].textContent = holder;
@@ -247,7 +251,7 @@
             if(h1 !== 'どんぐりチーム戦い') return Promise.reject(`title.ng`);
             const table = doc.querySelector('table');
             if(!table) return Promise.reject(`table.ng`);
-            table.style.marginLeft = '-18px';
+            table.style.marginLeft = '-16px';
             arenaField.querySelector('table').replaceWith(table);
             scaleContentsToFit(arenaField,table);
             const forms = table.querySelectorAll('form');
@@ -265,8 +269,13 @@
       })
       .catch(e=>console.error(e))
     })
-    scaleContentsToFit(grid.parentNode, grid);
   }
+
+  const observer = new MutationObserver(() => {
+    scaleContentsToFit(grid.parentNode, grid);
+  });
+  
+  observer.observe(grid, { attributes: true, childList: true, subtree: true });
 
   async function arenaChallenge (formData){
     const options = {
@@ -279,6 +288,10 @@
         throw new Error('/teamchallenge res.ng');
       }
       const text = await response.text();
+      if(text.includes('\n')) {
+        const lastLine = text.trim().split('\n').pop();
+        text = lastLine + '\n' + text;
+      }
       arenaResult.innerText = text;
       arenaResult.show();
     } catch (e) {
