@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         donguri Arena Improver
-// @version      0.9b
+// @version      0.9c
 // @description  fix arena ui
 // @author       7234e634
 // @match        https://donguri.5ch.net/teambattle
@@ -287,7 +287,7 @@
       if(!response.ok){
         throw new Error('/teamchallenge res.ng');
       }
-      const text = await response.text();
+      let text = await response.text();
       if(text.includes('\n')) {
         const lastLine = text.trim().split('\n').pop();
         text = lastLine + '\n' + text;
