@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         donguri Arena Improver
-// @version      0.9c
+// @version      0.9d
 // @description  fix arena ui
 // @author       7234e634
 // @match        https://donguri.5ch.net/teambattle
@@ -10,14 +10,18 @@
 (()=>{
   const vw = Math.min(document.documentElement.clientWidth, window.innerWidth || 0);
 
-  const topbar = document.createElement('div');
-  topbar.style.width = '100%';
-  topbar.style.height = '48px';
-  topbar.style.background = '#fff';
-  topbar.style.position = 'fixed';
-  topbar.style.top = '0';
-  topbar.style.border = 'solid 1px #000';
-  topbar.style.textAlign = 'right';
+  const header = document.querySelector('header');
+  const customMenu = document.createElement('div');
+  customMenu.style.position = 'fixed';
+  customMenu.style.top = '0';
+  customMenu.style.zIndex = '1';
+  customMenu.style.background = '#fff';
+  customMenu.style.border = 'solid 1px #000';
+  customMenu.style.marginLeft = '-8px';
+  header.querySelector('h4').style.display = 'none';
+  header.append(customMenu);
+  const progressBarContainer = document.createElement('div');
+  customMenu.append(progressBarContainer);
 
   const cellButton = document.createElement('button');
   cellButton.textContent = '詳細取得/更新';
@@ -67,7 +71,10 @@
   arenaField.style.background = '#fff';
   arenaField.style.color = '#000';
   arenaField.style.border = 'solid 1px #000';
-  arenaField.style.margin = '0';
+  arenaField.style.marginLeft = '1px';
+  if(vw > 768) {
+    arenaField.style.maxWidth = '50vw';
+  }
   (()=>{
     const closeButton = document.createElement('button');
     closeButton.textContent = '×';
@@ -90,7 +97,7 @@
   arenaResult.style.width = '50%';
   arenaResult.style.bottom = '10px';
   arenaResult.style.left = 'auto';
-  arenaResult.style.height = '640px';
+  arenaResult.style.height = '80vh';
   arenaResult.style.background = '#fff';
   arenaResult.style.color = '#000';
   arenaResult.style.fontSize = '80%';
@@ -109,13 +116,14 @@
       sortSelect.style.fontSize = '60%';
       cellButton.style.fontSize = '60%';
       refreshButton.style.fontSize = '60%';
+      progressBarContainer.style.fontSize = '60%';
     }
     const div = document.createElement('div');
     div.style.display = 'inline-block';
     div.append(refreshButton, cellButton);
-    topbar.append(sortSelect, div);
+    customMenu.append(sortSelect, div);
   })();
-  document.body.append(topbar,arenaField);
+  document.body.append(arenaField);
 
   const grid = document.querySelector('.grid');
   grid.parentNode.style.height = null;
@@ -287,12 +295,11 @@
       if(!response.ok){
         throw new Error('/teamchallenge res.ng');
       }
-      let text = await response.text();
-      if(text.includes('\n')) {
-        const lastLine = text.trim().split('\n').pop();
-        text = lastLine + '\n' + text;
-      }
+      const text = await response.text();
+      arenaResult.style.display = 'block';
       arenaResult.innerText = text;
+      arenaResult.scrollTop = arenaResult.scrollHeight;
+      arenaResult.style.display = '';
       arenaResult.show();
     } catch (e) {
       arenaResult.innerText = e;
@@ -357,4 +364,58 @@
     grid.innerHTML = '';
     cells.forEach(cell => grid.append(cell));
   }
+
+  function drawProgressBar(){
+    fetch('https://donguri.5ch.net/')
+    .then(res => res.ok ? res.text() : Promise.reject('res.ng'))
+    .then(text => {
+      const doc = new DOMParser().parseFromString(text,  'text/html'),
+      //headerDiv = document.body.querySelector('header > div'),
+      container = doc.querySelector('div.stat-block:nth-child(2)>div:nth-child(5)').cloneNode(true);
+      progressBar = container.lastElementChild,
+      barBody = progressBar.lastElementChild,
+      percentage = parseInt(barBody.textContent);
+      let str,min,totalSec,sec,margin;
+      if (percentage === 0 || percentage === 50) {
+        str = '（マップ更新時）';
+      } else {
+        if (percentage === 100) {
+          min = 0;
+          sec = 20;
+          margin = 10;
+        } else {
+          totalSec = (percentage < 50) ? (50 - percentage) * 36 : (100 - percentage) * 36 + 10;
+          min = Math.trunc(totalSec / 60);
+          sec = totalSec % 60;
+          margin = 20;
+        }
+        str = '（マップ更新まで' + min + '分' + sec + '秒 \xb1' + margin + '秒）';
+      }
+      progressBar.before(str, document.createElement('br'));
+      progressBar.style.display = 'inline-block';
+      progressBar.style.width = '400px';
+      progressBar.style.maxWidth = '100vw';
+      progressBar.style.height = '20px';
+      progressBar.style.background = '#ccc';
+      progressBar.style.borderRadius = '8px';
+      progressBar.style.fontSize = '16px';
+      progressBar.style.overflow = 'hidden';
+      progressBar.style.marginTop = '5px';
+      barBody.style.height = '100%';
+      barBody.style.lineHeight = 'normal';
+      barBody.style.background = '#428bca';
+      barBody.style.textAlign = 'right';
+      barBody.style.paddingRight = '5px';
+      barBody.style.boxSizing = 'border-box';
+      barBody.style.color = 'white';
+      barBody.style.width = barBody.style.width;
+      progressBarContainer.replaceChildren(container)
+    })
+    .catch(e => console.error(e))
+  }
+
+  drawProgressBar();
+  setInterval(() => {
+    drawProgressBar();
+  }, 18000);
 })();
