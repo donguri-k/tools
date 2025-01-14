@@ -167,6 +167,8 @@
   panel.style.display = 'none';
   panel.style.flexDirection = 'column';
   (()=>{
+    let currentEquip = [];
+
     const input = document.createElement('input');
     const button = document.createElement('button');
     // input.style.width = '100%';
@@ -250,6 +252,7 @@
       const backupDialog = document.createElement('dialog');
       backupDialog.style.background = '#fff';
       backupDialog.style.color = '#000';
+      backupDialog.style.left = 'auto';
       (()=>{
         const textarea = document.createElement('textarea');
         textarea.style.background = '#fff';
@@ -553,14 +556,18 @@
     }
     function importEquipPresets(text){
       try{
+        if(text.trim() === ''){
+          localStorage.removeItem('equipPresets');
+          showEquipPreset();
+          return true;
+        }
         const json = JSON.parse(text);
-        console.log(json);
         localStorage.setItem('equipPresets', JSON.stringify(json));
         showEquipPreset();
         return true;
       } catch (e) {
         if (e instanceof SyntaxError) {
-          alert('書式に問題があります。');
+          alert('書式エラー');
         }
         return false;
       }
@@ -569,10 +576,6 @@
     async function setPresetItems (presetName) {
       const stat = document.querySelector('.equip-preset-stat');
       stat.textContent = '装備中...';
-      let currentEquip = [];
-      if(sessionStorage.getItem('currentEquip')){
-        currentEquip = JSON.parse(sessionStorage.getItem('currentEquip'));
-      }
       const equipPresets = JSON.parse(localStorage.getItem('equipPresets'));
       const fetchPromises = equipPresets[presetName].id
         .filter(id => id !== undefined && id !== null && !currentEquip.includes(id)) //未登録or既に装備中の部位は除外
@@ -603,10 +606,10 @@
           throw new Error('装備エラー');
         }
         stat.textContent = '完了';
-        sessionStorage.setItem('currentEquip', JSON.stringify(equipPresets[presetName].id));
+        currentEquip = equipPresets[presetName].id;
       } catch (e) {
         stat.textContent = e;
-        sessionStorage.removeItem('currentEquip');
+        currentEquip = [];
       }
     }
     function removePresetItems(presetName) {
