@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         donguri arena assist tool
-// @version      1.0a_test
+// @version      1.0a
 // @description  fix arena ui and add functions
 // @author       7234e634
 // @match        https://donguri.5ch.net/teambattle
@@ -160,7 +160,7 @@
   panel.style.border = 'solid 1px #000';
   panel.style.height = '100vh';
   panel.style.width = '400px';
-  panel.style.maxWidth = '50vw';
+  panel.style.maxWidth = '80vw';
   panel.style.padding = '2px';
   panel.style.zIndex = '1';
   panel.style.textAlign = 'left';
@@ -182,7 +182,7 @@
     button.style.color = '#000';
     button.style.margin = '2px';
 
-    let presetListControl = 'equip';
+    let currentMode = 'equip';
     const presetList = document.createElement('ul');
     presetList.style.listStyle = 'none';
     presetList.style.margin = '0';
@@ -191,13 +191,17 @@
     presetList.style.overflowY = 'auto';
     presetList.style.flexGrow = '1';
     showEquipPreset();
+
     presetList.addEventListener('click', (event)=>{
       const presetLi = event.target.closest('li');
+      if(!presetLi) return;
       const presetName = presetLi.querySelector('span').textContent;
-      if(presetListControl === 'equip') {
+      if(currentMode === 'equip') {
         setPresetItems(presetName);
-      } else if (presetListControl === 'remove') {
+      } else if (currentMode === 'remove') {
         removePresetItems(presetName);
+      } else if (currentMode === 'edit') {
+        alert('未実装');
       }
     });
 
@@ -221,37 +225,102 @@
       const addButton = button.cloneNode();
       addButton.textContent = '追加';
       addButton.addEventListener('click', async()=>{
+        selectedEquips = {id:[], rank:[]};
         addButton.disabled = true;
         await showEquipList();
         addButton.disabled = false;
-      });
+      })
 
       const removeButton = button.cloneNode();
       removeButton.textContent = '削除';
-      removeButton.addEventListener('click', ()=>{
-        removeButton.style.display = 'none';
-        quitRemoveButton.style.display = '';
-        presetListControl = 'remove';
-        stat.textContent = '削除したいものをクリック';
+      removeButton.dataset.text = '削除';
+      removeButton.dataset.mode = 'remove';
+      /*
+      const editButton = button.cloneNode();
+      editButton.textContent = '編集';
+      editButton.dataset.text = '編集';
+      editButton.dataset.mode = 'edit';
+      */
+      const backupButton = button.cloneNode();
+      backupButton.textContent = 'バックアップ';
+      backupButton.addEventListener('click', ()=>{
+        backupDialog.showModal();
       })
 
-      const quitRemoveButton = button.cloneNode();
-      quitRemoveButton.textContent = '終了';
-      quitRemoveButton.style.display = 'none';
-      quitRemoveButton.addEventListener('click', ()=>{
-        removeButton.style.display = '';
-        quitRemoveButton.style.display = 'none';
-        presetListControl = 'equip';
+      const backupDialog = document.createElement('dialog');
+      backupDialog.style.background = '#fff';
+      backupDialog.style.color = '#000';
+      (()=>{
+        const textarea = document.createElement('textarea');
+        textarea.style.background = '#fff';
+        textarea.style.color = '#000';
+        textarea.style.whiteSpace = 'nowrap';
+        textarea.style.width = '70vw';
+        textarea.style.height = '50vh';
+        textarea.style.overflowX = 'auto';
+        const data = localStorage.getItem('equipPresets');
+        if(data) {
+          const json = JSON.parse(data);
+          const formattedString = Object.entries(json)
+            .map(([key, value]) => {return `  "${key}": ${JSON.stringify(value)}`;})
+            .join(',\n');
+          textarea.value = `{\n${formattedString}\n}`;
+        }
+        const div = document.createElement('div');
+        const saveButton = button.cloneNode();
+        saveButton.textContent = '保存';
+        saveButton.addEventListener('click', ()=>{
+          const isSuccess = importEquipPresets(textarea.value);
+          if(isSuccess) backupDialog.close();
+        });
+        const closeButton = button.cloneNode();
+        closeButton.textContent = '閉じる';
+        closeButton.addEventListener('click', ()=>{backupDialog.close()})
+        div.append(saveButton, closeButton);
+        backupDialog.append(textarea, div);
+      })();
+
+      [removeButton].forEach(button => {
+        button.addEventListener('click', () => {
+          const mode = button.dataset.mode;
+          if (currentMode === mode) {
+            resetMode(); 
+            return;
+          }
+          setMode(mode, button);
+        })        
+      });
+
+      function setMode(mode, button) {
+        resetMode(); 
+        currentMode = mode;
+        button.textContent = '終了';
+        button.classList.add('active');
+        if(mode === 'remove') stat.textContent = '削除したいものを選択';
+        else if (mode === 'edit') stat.textContent = 'クリックで編集';
+      }
+
+      function resetMode() {
+        if (currentMode) {
+          const activeButton = document.querySelector('.active');
+          if (activeButton) {
+            activeButton.textContent = activeButton.dataset.text;
+            activeButton.classList.remove('active');
+          }
+        }
+        currentMode = 'equip';
         stat.textContent = '';
-      })
+      }
 
       const stat = document.createElement('p');
       stat.style.margin = '0';
       stat.style.height = '24px';
       stat.style.fontSize = '16px';
+      stat.style.whiteSpace = 'nowrap';
+      stat.style.overflowX = 'hidden';
       stat.classList.add('equip-preset-stat');
   
-      div.append(closeButton, addButton, removeButton, quitRemoveButton, stat);
+      div.append(closeButton, addButton, removeButton, backupButton, backupDialog, stat);
       panel.append(div);
     })();
   
@@ -337,7 +406,7 @@
       confirmButton.addEventListener('click', ()=>{
         saveEquipPreset(presetNameInput.value.substring(0,32), selectedEquips);
         dialog.close();
-        selectedEquips = {id:[], rank:[]};
+        presetNameInput.value = '';
       })
       const cancelButton = button.cloneNode();
       cancelButton.textContent = 'キャンセル';
@@ -360,6 +429,17 @@
     let weaponTable, armorTable, necklaceTable;
     let selectedEquips = {id:[], rank:[]};
 
+    function sortTable(table){
+      const tbody = table.querySelector('tbody');
+      const rows = Array.from(tbody.rows);
+      rows.sort((a,b) => {
+        const nameA = a.cells[0].textContent;
+        const nameB = b.cells[0].textContent;
+        return nameA.localeCompare(nameB);
+      })
+      rows.forEach(row => tbody.appendChild(row));
+    }
+
     async function showEquipList(){
       if(!weaponTable || !armorTable || !necklaceTable) {
         try {
@@ -375,6 +455,7 @@
           if(!weaponTable || !armorTable || !necklaceTable) throw new Error('failed to find weapon/armor table');
 
           [weaponTable,armorTable,necklaceTable].forEach((table,index) => {
+            sortTable(table);
             table.style.color = '#000';
             table.style.margin = '0';
             const rows = table.querySelectorAll('tr');
@@ -440,10 +521,9 @@
       localStorage.setItem('equipPresets', JSON.stringify(equipPresets));
       showEquipPreset();
     }
-  
     function showEquipPreset(){
       let equipPresets = {};
-      if(localStorage.hasOwnProperty('equipPresets')){
+      if(localStorage.getItem('equipPresets')){
         equipPresets = JSON.parse(localStorage.getItem('equipPresets'));
       }
       const liTemplate = document.createElement('li');
@@ -459,25 +539,39 @@
       const span2 = document.createElement('span');
       span2.style.whiteSpace = 'nowrap';
       span2.style.textAlign = 'right';
+      span2.style.fontSize = '90%';
       liTemplate.append(span1,span2);
       const fragment = document.createDocumentFragment();
       Object.entries(equipPresets).forEach(([key, value])=>{
         const li = liTemplate.cloneNode(true);
         const span = li.querySelectorAll('span');
         span[0].textContent = key;
-        span[1].textContent = value.rank.join(', ');
+        span[1].textContent = value.rank.join(',');
         fragment.append(li);
       })
       presetList.replaceChildren(fragment);
     }
-  
+    function importEquipPresets(text){
+      try{
+        const json = JSON.parse(text);
+        console.log(json);
+        localStorage.setItem('equipPresets', JSON.stringify(json));
+        showEquipPreset();
+        return true;
+      } catch (e) {
+        if (e instanceof SyntaxError) {
+          alert('書式に問題があります。');
+        }
+        return false;
+      }
+
+    }
     async function setPresetItems (presetName) {
       const stat = document.querySelector('.equip-preset-stat');
       stat.textContent = '装備中...';
       let currentEquip = [];
       if(sessionStorage.getItem('currentEquip')){
         currentEquip = JSON.parse(sessionStorage.getItem('currentEquip'));
-        console.log(currentEquip);
       }
       const equipPresets = JSON.parse(localStorage.getItem('equipPresets'));
       const fetchPromises = equipPresets[presetName].id
