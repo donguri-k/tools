@@ -1,0 +1,1 @@
+javascript:(()=>{let i=Number(prompt('count'));if(isNaN(i)||i<=0){return;};const id=setInterval(()=>{i--;fetch('https://donguri.5ch.net/openbattlechest',{method:'POST',headers:{'Content-Type': 'application/x-www-form-urlencoded'}});if(i<=0){clearInterval(id);alert('finish')}},1100)})();
