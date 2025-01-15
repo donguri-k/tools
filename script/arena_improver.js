@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         donguri Arena Improver
-// @version      0.9d
-// @description  fix arena ui
+// @name         donguri arena assist tool
+// @version      1.0a
+// @description  fix arena ui and add functions
 // @author       7234e634
 // @match        https://donguri.5ch.net/teambattle
 // ==/UserScript==
@@ -23,20 +23,11 @@
   const progressBarContainer = document.createElement('div');
   customMenu.append(progressBarContainer);
 
-  const cellButton = document.createElement('button');
-  cellButton.textContent = '詳細取得/更新';
-  cellButton.addEventListener('click',getArenaInfo);
-  cellButton.style.marginLeft = '2px';
-
-  const refreshButton = document.createElement('button');
-  refreshButton.textContent = '陣地更新';
-  refreshButton.addEventListener('click',refreshAreaInfo);
-  refreshButton.style.marginLeft = '2px';
-
   const sortSelect = document.createElement('select');
   sortSelect.style.maxWidth = '128px';
   let lastSelectedValue = sortSelect.value;
 
+  // sort options 
   (()=>{
     const option1 = document.createElement('option');
     const option2 = document.createElement('option');
@@ -111,20 +102,46 @@
     }
   });
   arenaField.append(arenaResult);
+
+  // add buttons and select to custom menu
   (()=>{
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.style.flexShrink = '1';
+    button.style.flexGrow = '0';
+    button.style.whiteSpace = 'nowrap';
+    button.style.overflow = 'hidden';
+    button.style.boxSizing = 'border-box';
+
     if (vw < 768) {
       sortSelect.style.fontSize = '60%';
-      cellButton.style.fontSize = '60%';
-      refreshButton.style.fontSize = '60%';
+      button.style.fontSize = '60%';
       progressBarContainer.style.fontSize = '60%';
     }
+
+    const equipButton = button.cloneNode();
+    equipButton.textContent = '■装備';
+    equipButton.addEventListener('click',()=>{panel.style.display='flex'});
+  
+    const cellButton = button.cloneNode();
+    cellButton.textContent = '詳細取得/更新';
+    cellButton.addEventListener('click',getArenaInfo);
+  
+    const refreshButton = button.cloneNode();
+    refreshButton.textContent = '陣地更新';
+    refreshButton.addEventListener('click',refreshAreaInfo);
+
+
     const div = document.createElement('div');
-    div.style.display = 'inline-block';
-    div.append(refreshButton, cellButton);
-    customMenu.append(sortSelect, div);
+    div.style.display = 'flex';
+    div.style.flexWrap = 'nowrap';
+    div.style.gap = '2px';
+    div.style.justifyContent = 'center';
+    div.append(sortSelect, equipButton, refreshButton, cellButton);
+    customMenu.append(div);
   })();
   document.body.append(arenaField);
-
+  
   const grid = document.querySelector('.grid');
   grid.parentNode.style.height = null;
   grid.style.maxWidth = '100%';
@@ -133,6 +150,486 @@
   table.parentNode.style.maxWidth = '100%';
   table.parentNode.style.overflow = 'auto';
   table.parentNode.style.height = '60vh';
+
+  //-- 装備 --//
+  const panel = document.createElement('div');
+  panel.style.position = 'fixed';
+  panel.style.top = '0';
+  panel.style.right = '0';
+  panel.style.background = '#f0f0f0';
+  panel.style.border = 'solid 1px #000';
+  panel.style.height = '100vh';
+  panel.style.width = '400px';
+  panel.style.maxWidth = '80vw';
+  panel.style.padding = '2px';
+  panel.style.zIndex = '1';
+  panel.style.textAlign = 'left';
+  panel.style.display = 'none';
+  panel.style.flexDirection = 'column';
+  (()=>{
+    let currentEquip = [];
+
+    const input = document.createElement('input');
+    const button = document.createElement('button');
+    // input.style.width = '100%';
+    // input.style.boxSizing = 'border';
+    // input.style.background = '#eee';
+    // input.style.color = '#000';
+    // input.style.borderRadius = 'unset';
+    // input.placeholder = 'フィルタ…';
+    button.type = 'button';
+    button.style.borderRadius = 'unset';
+    button.style.border = 'solid 1px #000';
+    button.style.background = '#ccc';
+    button.style.color = '#000';
+    button.style.margin = '2px';
+
+    let currentMode = 'equip';
+    const presetList = document.createElement('ul');
+    presetList.style.listStyle = 'none';
+    presetList.style.margin = '0';
+    presetList.style.padding = '0';
+    presetList.style.borderTop = 'solid 1px #000';
+    presetList.style.overflowY = 'auto';
+    presetList.style.flexGrow = '1';
+    showEquipPreset();
+
+    presetList.addEventListener('click', (event)=>{
+      const presetLi = event.target.closest('li');
+      if(!presetLi) return;
+      const presetName = presetLi.querySelector('span').textContent;
+      if(currentMode === 'equip') {
+        setPresetItems(presetName);
+      } else if (currentMode === 'remove') {
+        removePresetItems(presetName);
+      } else if (currentMode === 'edit') {
+        alert('未実装');
+      }
+    });
+
+    (()=>{
+      const div = document.createElement('div');
+      div.style.marginTop = '2px';
+      div.style.lineHeight = 'normal';
+  
+      const closeButton = button.cloneNode();
+      closeButton.textContent = '×';
+      closeButton.style.position = 'absolute';
+      closeButton.style.height = '32px';
+      closeButton.style.width = '32px';
+      closeButton.style.top = '2px';
+      closeButton.style.right = '2px';
+      closeButton.style.lineHeight = '16px';
+      closeButton.addEventListener('click', ()=>{
+        panel.style.display = 'none';
+      })
+  
+      const addButton = button.cloneNode();
+      addButton.textContent = '追加';
+      addButton.addEventListener('click', async()=>{
+        selectedEquips = {id:[], rank:[]};
+        addButton.disabled = true;
+        await showEquipList();
+        addButton.disabled = false;
+      })
+
+      const removeButton = button.cloneNode();
+      removeButton.textContent = '削除';
+      removeButton.dataset.text = '削除';
+      removeButton.dataset.mode = 'remove';
+      /*
+      const editButton = button.cloneNode();
+      editButton.textContent = '編集';
+      editButton.dataset.text = '編集';
+      editButton.dataset.mode = 'edit';
+      */
+      const backupButton = button.cloneNode();
+      backupButton.textContent = 'バックアップ';
+      backupButton.addEventListener('click', ()=>{
+        backupDialog.showModal();
+      })
+
+      const backupDialog = document.createElement('dialog');
+      backupDialog.style.background = '#fff';
+      backupDialog.style.color = '#000';
+      backupDialog.style.left = 'auto';
+      (()=>{
+        const textarea = document.createElement('textarea');
+        textarea.style.background = '#fff';
+        textarea.style.color = '#000';
+        textarea.style.whiteSpace = 'nowrap';
+        textarea.style.width = '70vw';
+        textarea.style.height = '50vh';
+        textarea.style.overflowX = 'auto';
+        const data = localStorage.getItem('equipPresets');
+        if(data) {
+          const json = JSON.parse(data);
+          const formattedString = Object.entries(json)
+            .map(([key, value]) => {return `  "${key}": ${JSON.stringify(value)}`;})
+            .join(',\n');
+          textarea.value = `{\n${formattedString}\n}`;
+        }
+        const div = document.createElement('div');
+        const saveButton = button.cloneNode();
+        saveButton.textContent = '保存';
+        saveButton.addEventListener('click', ()=>{
+          const isSuccess = importEquipPresets(textarea.value);
+          if(isSuccess) backupDialog.close();
+        });
+        const copyButton = button.cloneNode();
+        copyButton.textContent = 'コピー';
+        copyButton.addEventListener('click', ()=>{navigator.clipboard.writeText(textarea.value).then(alert('copy'));})
+        const closeButton = button.cloneNode();
+        closeButton.textContent = '閉じる';
+        closeButton.addEventListener('click', ()=>{backupDialog.close()})
+        div.append(saveButton, copyButton, closeButton);
+        backupDialog.append(textarea, div);
+      })();
+
+      [removeButton].forEach(button => {
+        button.addEventListener('click', () => {
+          const mode = button.dataset.mode;
+          if (currentMode === mode) {
+            resetMode(); 
+            return;
+          }
+          setMode(mode, button);
+        })
+      });
+
+      function setMode(mode, button) {
+        resetMode(); 
+        currentMode = mode;
+        button.textContent = '終了';
+        button.classList.add('active');
+        if(mode === 'remove') stat.textContent = '削除したいものを選択';
+        else if (mode === 'edit') stat.textContent = 'クリックで編集';
+      }
+
+      function resetMode() {
+        if (currentMode) {
+          const activeButton = document.querySelector('.active');
+          if (activeButton) {
+            activeButton.textContent = activeButton.dataset.text;
+            activeButton.classList.remove('active');
+          }
+        }
+        currentMode = 'equip';
+        stat.textContent = '';
+      }
+
+      const stat = document.createElement('p');
+      stat.style.margin = '0';
+      stat.style.height = '24px';
+      stat.style.fontSize = '16px';
+      stat.style.whiteSpace = 'nowrap';
+      stat.style.overflowX = 'hidden';
+      stat.classList.add('equip-preset-stat');
+  
+      div.append(closeButton, addButton, removeButton, backupButton, backupDialog, stat);
+      panel.append(div);
+    })();
+  
+    panel.append(presetList);
+    document.body.append(panel);
+
+    // equip item table dialog
+    const equipField = document.createElement('dialog');
+    equipField.style.background = '#fff';
+    equipField.style.color = '#000';
+    equipField.style.maxWidth = '90vw';
+    equipField.style.height = '95vh';
+    const closeButton = button.cloneNode();
+    closeButton.textContent = '×';
+    closeButton.style.position = 'absolute';
+    closeButton.style.height = '32px';
+    closeButton.style.width = '32px';
+    closeButton.style.top = '2px';
+    closeButton.style.right = '2px';
+    closeButton.style.lineHeight = '16px';
+    closeButton.addEventListener('click', ()=>{equipField.close()});
+    const tableContainer = document.createElement('div');
+    tableContainer.style.height = '75vh';
+    tableContainer.style.overflow = 'auto';
+    const rankSelect = document.createElement('select');
+    rankSelect.style.maxWidth = '64px';
+    const ranks = ['N','R','SR','SSR','UR'];
+    ranks.forEach(rank => {
+      const option = document.createElement('option');
+      option.textContent = rank;
+      option.value = rank;
+      rankSelect.append(option);
+    })
+    rankSelect.addEventListener('change', ()=>{filterItemsByRank(rankSelect.value)});
+    const bar = document.createElement('div');
+    const p = document.createElement('p');
+    p.classList.add('equip-preset-selected');
+    p.style.background = '#fff';
+    p.style.color = '#000';
+    p.style.margin = '2px';
+    p.style.height = '28px';
+
+    const equipSwitchButton = button.cloneNode();
+    equipSwitchButton.textContent = '▶武器';
+    equipSwitchButton.style.width = '4em';
+    equipSwitchButton.style.whiteSpace = 'nowrap';
+    equipSwitchButton.addEventListener('click', (event)=>{
+      if(!weaponTable.style.display) {
+        weaponTable.style.display = 'none';
+        armorTable.style.display = '';
+        necklaceTable.style.display = 'none';
+        event.target.textContent = '▶防具';
+      } else if (!armorTable.style.display) {
+        weaponTable.style.display = 'none';
+        armorTable.style.display = 'none';
+        necklaceTable.style.display = '';
+        event.target.textContent = '▶首';
+      } else if (!necklaceTable.style.display) {
+        weaponTable.style.display = '';
+        armorTable.style.display = 'none';
+        necklaceTable.style.display = 'none';
+        event.target.textContent = '▶武器';
+      }
+    });
+
+    // register
+    const registerButton = button.cloneNode();
+    registerButton.textContent = '登録';
+    (()=>{
+      const dialog = document.createElement('dialog');
+      dialog.style.background = '#fff';
+      dialog.style.border = 'solid 1px #000';
+      dialog.style.color = '#000';
+      const presetNameInput = document.createElement('input');
+      presetNameInput.placeholder = 'プリセット名';
+      presetNameInput.style.background = '#fff';
+      presetNameInput.style.color = '#000';
+      const p = document.createElement('p');
+      p.textContent = '同名のプリセットが存在する場合は上書きされます。';
+      p.style.margin = '0';
+      const confirmButton = button.cloneNode();
+      confirmButton.textContent = '保存';
+      confirmButton.addEventListener('click', ()=>{
+        saveEquipPreset(presetNameInput.value.substring(0,32), selectedEquips);
+        dialog.close();
+        presetNameInput.value = '';
+      })
+      const cancelButton = button.cloneNode();
+      cancelButton.textContent = 'キャンセル';
+      cancelButton.addEventListener('click', ()=>{dialog.close()});
+      dialog.append(presetNameInput, confirmButton, cancelButton, p);
+      equipField.append(dialog);
+      registerButton.addEventListener('click', ()=>{
+        if(!selectedEquips.id[0] || !selectedEquips.id[1]) {
+          alert('装備が未選択です');
+          return;
+        }
+        dialog.showModal();
+      });
+    })();
+
+    bar.append(rankSelect, equipSwitchButton, registerButton, p);
+    equipField.append(bar, tableContainer, closeButton);
+    document.body.append(equipField);
+
+    let weaponTable, armorTable, necklaceTable;
+    let selectedEquips = {id:[], rank:[]};
+
+    function sortTable(table){
+      const tbody = table.querySelector('tbody');
+      const rows = Array.from(tbody.rows);
+      rows.sort((a,b) => {
+        const nameA = a.cells[0].textContent;
+        const nameB = b.cells[0].textContent;
+        return nameA.localeCompare(nameB);
+      })
+      rows.forEach(row => tbody.appendChild(row));
+    }
+
+    async function showEquipList(){
+      if(!weaponTable || !armorTable || !necklaceTable) {
+        try {
+          const res = await fetch('https://donguri.5ch.net/bag');
+          if(!res.ok) throw new Error('bag response error');
+          const text = await res.text();
+          const doc = new DOMParser().parseFromString(text, 'text/html');
+          const h1 = doc.querySelector('h1');
+          if(h1?.textContent !== 'アイテムバッグ') throw new Error(text);
+          weaponTable = doc.querySelector('#weaponTable');
+          armorTable = doc.querySelector('#armorTable');
+          necklaceTable = doc.querySelector('#necklaceTable');
+          if(!weaponTable || !armorTable || !necklaceTable) throw new Error('failed to find weapon/armor table');
+
+          [weaponTable,armorTable,necklaceTable].forEach((table,index) => {
+            sortTable(table);
+            table.style.color = '#000';
+            table.style.margin = '0';
+            const rows = table.querySelectorAll('tr');
+            rows.forEach(row => {
+              const id = row.cells[1].querySelector('a')?.href.replace('https://donguri.5ch.net/equip/','');
+              row.cells[0].style.textDecorationLine = 'underline';
+              row.cells[0].style.cursor = 'pointer';
+              row.cells[0].dataset.id = id;
+              row.cells[1].style.display = 'none';
+              row.cells[2].style.display = 'none';
+              if(index !== 2) {
+                const modLink = row.cells[7].querySelector('a');
+                if(modLink) modLink.target = '_blank';
+                row.cells[9].style.display = 'none';
+              } else if (index === 2) {
+                row.cells[3].style.whiteSpace = 'nowrap';
+                const ul = row.cells[3].querySelector('ul');
+                if(ul) ul.style.padding = '0';
+                row.cells[5].style.display = 'none';
+              }
+              row.cells[0].addEventListener('click', (event)=>{
+                if(!event.target.closest('td')) return;
+                const target = event.target.closest('td');
+                const itemName = target.textContent;
+                //const rank = ranks.find(val => itemName.includes(`[${val}]`) || '');
+                const rank = itemName.match(/\[(.+?)\]/)[1];
+                const id = target.dataset.id;
+                selectedEquips.id[index] = id;
+                selectedEquips.rank[index] = rank;
+                document.querySelector('.equip-preset-selected').textContent = selectedEquips.id;
+              })
+            })
+          })
+          tableContainer.append(weaponTable, armorTable, necklaceTable);
+        } catch(e) {
+          console.error(e);
+          return;
+        }
+      }
+
+      equipSwitchButton.textContent = '▶武器';
+      weaponTable.style.display = '';
+      armorTable.style.display = 'none';
+      necklaceTable.style.display = 'none';
+      filterItemsByRank(rankSelect.value);
+      document.querySelector('.equip-preset-selected').textContent = '';
+      equipField.showModal();
+    }
+    function filterItemsByRank (rank){
+      [weaponTable, armorTable].forEach(table => {
+        table.querySelectorAll('tbody > tr').forEach(row => {
+          const itemName = row.cells[0].textContent;
+          row.style.display = itemName.includes(`[${rank}]`) ? null : 'none';
+        })
+      })
+    }
+    function saveEquipPreset(name, obj){
+      let equipPresets = {};
+      if(localStorage.hasOwnProperty('equipPresets')){
+        equipPresets = JSON.parse(localStorage.getItem('equipPresets'));
+      }
+      equipPresets[name] = obj;
+      localStorage.setItem('equipPresets', JSON.stringify(equipPresets));
+      showEquipPreset();
+    }
+    function showEquipPreset(){
+      let equipPresets = {};
+      if(localStorage.getItem('equipPresets')){
+        equipPresets = JSON.parse(localStorage.getItem('equipPresets'));
+      }
+      const liTemplate = document.createElement('li');
+      liTemplate.style.display = 'flex';
+      liTemplate.style.justifyContent = 'space-between';
+      liTemplate.style.borderBottom = 'solid 1px #000';
+      liTemplate.style.color = '#428bca';
+      liTemplate.style.cursor = 'pointer';
+      const span1 = document.createElement('span');
+      span1.style.flexGrow = '1';
+      span1.style.whiteSpace = 'nowrap';
+      span1.style.overflowX = 'hidden';
+      const span2 = document.createElement('span');
+      span2.style.whiteSpace = 'nowrap';
+      span2.style.textAlign = 'right';
+      span2.style.fontSize = '90%';
+      liTemplate.append(span1,span2);
+      const fragment = document.createDocumentFragment();
+      Object.entries(equipPresets).forEach(([key, value])=>{
+        const li = liTemplate.cloneNode(true);
+        const span = li.querySelectorAll('span');
+        span[0].textContent = key;
+        span[1].textContent = value.rank.join(',');
+        fragment.append(li);
+      })
+      presetList.replaceChildren(fragment);
+    }
+    function importEquipPresets(text){
+      try{
+        if(text.trim() === ''){
+          localStorage.removeItem('equipPresets');
+          showEquipPreset();
+          return true;
+        }
+        const json = JSON.parse(text);
+        localStorage.setItem('equipPresets', JSON.stringify(json));
+        showEquipPreset();
+        return true;
+      } catch (e) {
+        if (e instanceof SyntaxError) {
+          alert('書式エラー');
+        }
+        return false;
+      }
+
+    }
+    async function setPresetItems (presetName) {
+      const stat = document.querySelector('.equip-preset-stat');
+      stat.textContent = '装備中...';
+      const equipPresets = JSON.parse(localStorage.getItem('equipPresets'));
+      const fetchPromises = equipPresets[presetName].id
+        .filter(id => id !== undefined && id !== null && !currentEquip.includes(id)) //未登録or既に装備中の部位は除外
+        .map(id => fetch('https://donguri.5ch.net/equip/' + id));
+
+      try {
+        const responses = await Promise.all(fetchPromises);
+        const texts = await Promise.all(
+          responses.map(async response => {
+            if (!response.ok) {
+              throw new Error('読み込み失敗');
+            }
+            return response.text();
+          })
+        );
+        
+        if(texts.includes('どんぐりが見つかりませんでした。')) {
+          throw new Error('再ログインしてください');
+        } else if(texts.includes('アイテムが見つかりませんでした。')) {
+          throw new Error('アイテムが見つかりませんでした');
+        }
+
+        const docs = texts.map(text => new DOMParser().parseFromString(text,'text/html'));
+        const titles = docs.map(doc => doc.querySelector('h1')?.textContent);
+        if(titles.includes('どんぐり基地')) {
+          throw new Error('再ログインしてください');
+        } else if (!titles.every(title => title === 'アイテムバッグ')) {
+          throw new Error('装備エラー');
+        }
+        stat.textContent = '完了';
+        currentEquip = equipPresets[presetName].id;
+      } catch (e) {
+        stat.textContent = e;
+        currentEquip = [];
+      }
+    }
+    function removePresetItems(presetName) {
+      const userConfirmed = confirm(presetName + ' を削除しますか？');
+      if(!userConfirmed) return;
+      const stat = document.querySelector('.equip-preset-stat');
+      const equipPresets = JSON.parse(localStorage.getItem('equipPresets'));
+      if(!equipPresets || !equipPresets[presetName]) {
+        stat.textContent = '';
+        return;
+      }
+      delete equipPresets[presetName];
+      localStorage.setItem('equipPresets', JSON.stringify(equipPresets));
+      showEquipPreset();
+    }  
+  })();
+  //-- ここまで --//
 
   function scaleContentsToFit(container, contents){
     const containerWidth = container.clientWidth;
@@ -213,7 +710,7 @@
     }).catch(e=>console.error(e))
   }
   async function getArenaInfo(){
-    await refreshAreaInfo();
+    refreshAreaInfo();
     grid.style.gridTemplateRows = grid.style.gridTemplateRows.replace('35px','65px'),
     grid.style.gridTemplateColumns = grid.style.gridTemplateColumns.replace('35px','105px'),
     grid.parentNode.style.height = null,
