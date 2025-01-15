@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         donguri arena assist tools
+// @name         donguri arena assist tool
 // @version      1.0a_test
 // @description  fix arena ui and add functions
 // @author       7234e634
@@ -276,10 +276,13 @@
           const isSuccess = importEquipPresets(textarea.value);
           if(isSuccess) backupDialog.close();
         });
+        const copyButton = button.cloneNode();
+        copyButton.textContent = 'コピー';
+        copyButton.addEventListener('click', ()=>{navigator.clipboard.writeText(textarea.value).then(alert('copy'));})
         const closeButton = button.cloneNode();
         closeButton.textContent = '閉じる';
         closeButton.addEventListener('click', ()=>{backupDialog.close()})
-        div.append(saveButton, closeButton);
+        div.append(saveButton, copyButton, closeButton);
         backupDialog.append(textarea, div);
       })();
 
