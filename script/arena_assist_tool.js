@@ -770,11 +770,11 @@
         p[1].textContent = holder;
         p[0].style.margin = '0';
         p[1].style.margin = '0';
-        cell = elm.cloneNode();
-        cell.append(p[0],p[1]),
-        cell.style.overflow = 'hidden',
-        cell.style.width = '100px',
-        cell.style.height = '60px',
+        const cell = elm.cloneNode();
+        cell.append(p[0],p[1]);
+        cell.style.overflow = 'hidden';
+        cell.style.width = '100px';
+        cell.style.height = '60px';
         cell.style.borderWidth = '3px';
         cell.addEventListener('click', ()=>{
           fetch(url)
@@ -897,7 +897,7 @@
     .then(text => {
       const doc = new DOMParser().parseFromString(text,  'text/html'),
       //headerDiv = document.body.querySelector('header > div'),
-      container = doc.querySelector('div.stat-block:nth-child(2)>div:nth-child(5)').cloneNode(true);
+      container = doc.querySelector('div.stat-block:nth-child(2)>div:nth-child(5)').cloneNode(true),
       progressBar = container.lastElementChild,
       barBody = progressBar.lastElementChild,
       percentage = parseInt(barBody.textContent);
