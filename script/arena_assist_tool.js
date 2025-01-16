@@ -102,7 +102,6 @@
       arenaResult.close();
     }
     if (!panel.contains(event.target)) {
-      event.preventDefault();
       panel.style.display = 'none';
     }
   });
