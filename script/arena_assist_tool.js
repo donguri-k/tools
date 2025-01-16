@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         donguri arena assist tool
-// @version      1.0a
+// @version      1.0b
 // @description  fix arena ui and add functions
 // @author       7234e634
 // @match        https://donguri.5ch.net/teambattle
@@ -96,9 +96,14 @@
   arenaResult.style.margin = '0';
   arenaResult.style.textAlign = 'left';
   arenaResult.style.overflowY = 'auto';
-  window.addEventListener('click', (event) => {
+  window.addEventListener('mousedown', (event) => {
+    event.stopPropagation();
     if (!arenaResult.contains(event.target)) {
       arenaResult.close();
+    }
+    if (!panel.contains(event.target)) {
+      event.preventDefault();
+      panel.style.display = 'none';
     }
   });
   arenaField.append(arenaResult);
@@ -160,12 +165,13 @@
   panel.style.border = 'solid 1px #000';
   panel.style.height = '100vh';
   panel.style.width = '400px';
-  panel.style.maxWidth = '80vw';
+  panel.style.maxWidth = '75vw';
   panel.style.padding = '2px';
   panel.style.zIndex = '1';
   panel.style.textAlign = 'left';
   panel.style.display = 'none';
   panel.style.flexDirection = 'column';
+
   (()=>{
     let currentEquip = [];
 
@@ -183,6 +189,8 @@
     button.style.background = '#ccc';
     button.style.color = '#000';
     button.style.margin = '2px';
+    button.style.height = '42px';
+    button.style.lineHeight = '1';
 
     let currentMode = 'equip';
     const presetList = document.createElement('ul');
@@ -215,11 +223,14 @@
       const closeButton = button.cloneNode();
       closeButton.textContent = '×';
       closeButton.style.position = 'absolute';
-      closeButton.style.height = '32px';
-      closeButton.style.width = '32px';
+      closeButton.style.background = 'none';
+      closeButton.style.border = 'none';
+      closeButton.style.height = '40px';
+      closeButton.style.width = '40px';
+      closeButton.style.fontSize = '32px';
       closeButton.style.top = '2px';
       closeButton.style.right = '2px';
-      closeButton.style.lineHeight = '16px';
+      closeButton.style.lineHeight = '1';
       closeButton.addEventListener('click', ()=>{
         panel.style.display = 'none';
       })
@@ -245,6 +256,9 @@
       */
       const backupButton = button.cloneNode();
       backupButton.textContent = 'バックアップ';
+      backupButton.style.height = '42px';
+      backupButton.style.lineHeight = '1';
+      backupButton.style.fontSize = '80%';
       backupButton.addEventListener('click', ()=>{
         backupDialog.showModal();
       })
@@ -294,7 +308,7 @@
             return;
           }
           setMode(mode, button);
-        })        
+        })
       });
 
       function setMode(mode, button) {
@@ -342,11 +356,14 @@
     const closeButton = button.cloneNode();
     closeButton.textContent = '×';
     closeButton.style.position = 'absolute';
-    closeButton.style.height = '32px';
-    closeButton.style.width = '32px';
+    closeButton.style.background = 'none';
+    closeButton.style.border = 'none';
+    closeButton.style.height = '40px';
+    closeButton.style.width = '40px';
+    closeButton.style.fontSize = '32px';
     closeButton.style.top = '2px';
     closeButton.style.right = '2px';
-    closeButton.style.lineHeight = '16px';
+    closeButton.style.lineHeight = '1';
     closeButton.addEventListener('click', ()=>{equipField.close()});
     const tableContainer = document.createElement('div');
     tableContainer.style.height = '75vh';
@@ -362,6 +379,7 @@
     })
     rankSelect.addEventListener('change', ()=>{filterItemsByRank(rankSelect.value)});
     const bar = document.createElement('div');
+    bar.style.textAlign = 'center';
     const p = document.createElement('p');
     p.classList.add('equip-preset-selected');
     p.style.background = '#fff';
@@ -400,6 +418,7 @@
       dialog.style.background = '#fff';
       dialog.style.border = 'solid 1px #000';
       dialog.style.color = '#000';
+      dialog.style.textAlign = 'center';
       const presetNameInput = document.createElement('input');
       presetNameInput.placeholder = 'プリセット名';
       presetNameInput.style.background = '#fff';
@@ -410,9 +429,20 @@
       const confirmButton = button.cloneNode();
       confirmButton.textContent = '保存';
       confirmButton.addEventListener('click', ()=>{
+        if(presetNameInput.value.trim() === '') return;
         saveEquipPreset(presetNameInput.value.substring(0,32), selectedEquips);
         dialog.close();
         presetNameInput.value = '';
+      })
+      presetNameInput.addEventListener('keydown', (e)=>{
+        if (e.key === "Enter") {
+          e.preventDefault(); // これが無いとdialogが閉じない
+          if(presetNameInput.value.trim() === '') return;
+          saveEquipPreset(presetNameInput.value.substring(0,32), selectedEquips);
+          console.log(dialog);
+          dialog.close();
+          presetNameInput.value = '';  
+        }
       })
       const cancelButton = button.cloneNode();
       cancelButton.textContent = 'キャンセル';
@@ -430,7 +460,7 @@
 
     bar.append(rankSelect, equipSwitchButton, registerButton, p);
     equipField.append(bar, tableContainer, closeButton);
-    document.body.append(equipField);
+    panel.append(equipField);
 
     let weaponTable, armorTable, necklaceTable;
     let selectedEquips = {id:[], rank:[]};
