@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         donguri arena assist tool
-// @version      1.0a_test
+// @version      1.0c_test
 // @description  fix arena ui and add functions
 // @author       7234e634
 // @match        https://donguri.5ch.net/teambattle
@@ -23,42 +23,79 @@
   const progressBarContainer = document.createElement('div');
   customMenu.append(progressBarContainer);
 
-  const sortSelect = document.createElement('select');
-  sortSelect.style.maxWidth = '128px';
-  let lastSelectedValue = sortSelect.value;
-
-  // sort options 
+  // add buttons and select to custom menu
   (()=>{
-    const option1 = document.createElement('option');
-    const option2 = document.createElement('option');
-    option1.textContent = 'デフォルト順';
-    option2.textContent = '装備制限順';
-    option1.value = 'default';
-    option2.value = 'cond';
-    sortSelect.append(option1,option2);
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.style.flexShrink = '1';
+    button.style.flexGrow = '0';
+    button.style.whiteSpace = 'nowrap';
+    button.style.overflow = 'hidden';
+    button.style.boxSizing = 'border-box';
 
-    sortSelect.addEventListener('change', handleSelection);
-
-    // 再選択を可能にする
-    sortSelect.addEventListener('focus', () => lastSelectedValue = null);
-    sortSelect.addEventListener('mousedown', handleSelection);
-    sortSelect.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') handleSelection();
-    });
-    function handleSelection() {
-      const currentValue = sortSelect.value;
-      if (lastSelectedValue !== currentValue || lastSelectedValue === null) {
-        sortCells(currentValue);
-        lastSelectedValue = currentValue;
-      }
+    if (vw < 768) {
+      button.style.fontSize = '60%';
+      progressBarContainer.style.fontSize = '60%';
     }
+    const sortButton = button.cloneNode();
+    sortButton.textContent = '▼ソート';
+    sortButton.addEventListener('click', ()=>{
+      sortMenu.style.display = 'flex';
+    });
+  
+    const equipButton = button.cloneNode();
+    equipButton.textContent = '■装備';
+    equipButton.addEventListener('click',()=>{panel.style.display='flex'});
+  
+    const cellButton = button.cloneNode();
+    cellButton.textContent = '詳細取得/更新';
+    cellButton.addEventListener('click',getArenaInfo);
+  
+    const refreshButton = button.cloneNode();
+    refreshButton.textContent = '陣地更新';
+    refreshButton.addEventListener('click',refreshAreaInfo);
+
+    const main = document.createElement('div');
+    main.style.display = 'flex';
+    main.style.flexWrap = 'nowrap';
+    main.style.gap = '2px';
+    main.style.justifyContent = 'center';
+    main.append(equipButton, sortButton, refreshButton, cellButton);
+
+    
+    const defaultSort = button.cloneNode();
+    const condSort = button.cloneNode();
+    defaultSort.textContent = 'デフォルト順';
+    condSort.textContent = '装備制限順';
+    defaultSort.addEventListener('click', ()=>{
+      sortCells('default');
+      sortMenu.style.display = 'none';
+    })
+    condSort.addEventListener('click', ()=>{
+      sortCells('cond');
+      sortMenu.style.display = 'none';
+    })
+
+    const sortMenu = document.createElement('div');
+    sortMenu.style.display = 'none';
+    sortMenu.style.flexWrap = 'nowrap';
+    sortMenu.style.gap = '2px';
+    sortMenu.style.justifyContent = 'center';
+    sortMenu.append(defaultSort, condSort);
+
+    customMenu.append(main, sortMenu);
+    customMenu.addEventListener('mousedown', (event)=>{
+      if (!sortMenu.contains(event.target)) {
+        sortMenu.style.display = 'none';
+      }
+    })
   })();
 
   const arenaField = document.createElement('dialog');
   arenaField.style.position = 'fixed';
   arenaField.style.width = '100%';
   arenaField.style.bottom = '10px';
-  arenaField.style.height = '320px';
+  arenaField.style.background = 'none';
   arenaField.style.background = '#fff';
   arenaField.style.color = '#000';
   arenaField.style.border = 'solid 1px #000';
@@ -66,21 +103,135 @@
   if(vw > 768) {
     arenaField.style.maxWidth = '50vw';
   }
+  const arenaModDialog = document.createElement('dialog');
+  let wood, steel
+
   (()=>{
-    const closeButton = document.createElement('button');
+    const div = document.createElement('div');
+    div.style.display = 'flex';
+    div.style.gap = '2px';
+
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.style.whiteSpace = 'nowrap';
+
+    if (vw < 768) {
+      button.style.fontSize = '80%';
+    }
+
+    const challengeButton = button.cloneNode();
+    challengeButton.textContent = 'エリアに挑む';
+    challengeButton.style.flexGrow = '2';
+    challengeButton.addEventListener('click', ()=>{
+      const table = arenaField.querySelector('table');
+      const row = table.dataset.row;
+      const col = table.dataset.col;
+      arenaChallenge(row, col);
+    })
+
+    const reinforceButton = button.cloneNode();
+    reinforceButton.textContent = '強化する';
+    reinforceButton.style.flexGrow = '1';
+    reinforceButton.addEventListener('click', ()=>{
+      arenaModDialog.dataset.action = 'ReinforceArena';
+      modButton.textContent = '強化する';
+      p.textContent = `木材: ${wood}, 鉄: ${steel}; 1ptにつき各25個`;
+      arenaModDialog.show();
+    })
+
+    const siegeButton = button.cloneNode();
+    siegeButton.textContent = '弱体化する';
+    siegeButton.style.flexGrow = '1';
+    siegeButton.addEventListener('click', ()=>{
+      arenaModDialog.dataset.action = 'SiegeArena';
+      modButton.textContent = '弱体化する';
+      p.textContent = `木材: ${wood}, 鉄: ${steel}; 1ptにつき各25個`;
+      arenaModDialog.show();
+    })
+
+    const closeButton = button.cloneNode();
     closeButton.textContent = '×';
-    closeButton.style.position = 'absolute';
-    closeButton.style.top = '4px';
-    closeButton.style.right = '4px';
-    closeButton.style.fontSize = '18px';
-    closeButton.style.width = '36px';
-    closeButton.style.height = '36px';
-    closeButton.style.lineHeight = '36px';
-    closeButton.style.padding = '0';
+    closeButton.marginLeft = 'auto';
+    closeButton.style.fontSize = '24px';
+    closeButton.style.width = '48px';
+    closeButton.style.height = '48px';
+    closeButton.style.lineHeight = '1';
+
+    const p = document.createElement('p');
+    const modButton = button.cloneNode();
 
     closeButton.addEventListener('click', ()=>{arenaField.close()});
     const table = document.createElement('table');
-    arenaField.append(closeButton,table);
+    div.append(challengeButton, reinforceButton, siegeButton, closeButton);
+    arenaField.append(div, table, arenaModDialog);
+    (()=>{
+      arenaModDialog.style.background = '#fff';
+      arenaModDialog.style.border = 'solid 1px #000';
+      arenaModDialog.style.color = '#000';
+      arenaModDialog.style.position = 'fixed';
+      arenaModDialog.style.bottom = '10px';
+
+      const div = document.createElement('div');
+      div.style.display = 'flex';
+      div.style.gap = '2px';
+
+      const input = document.createElement('input');
+      input.type = 'number';
+      input.placeholder = '改造の量';
+
+      modButton.addEventListener('click', ()=>{
+        const amt = Number(input.value);
+        const table = arenaField.querySelector('table');
+        const row = table.dataset.row;
+        const col = table.dataset.col;
+        const action = arenaModDialog.dataset.action;
+        arenaMod(row, col, action, amt);
+        arenaModDialog.close();
+      })
+
+      input.addEventListener('keydown', (e)=>{
+        if (e.key === "Enter") {
+          e.preventDefault(); // これが無いとdialogが閉じない
+          const amt = Number(input.value);
+          const table = arenaField.querySelector('table');
+          const row = table.dataset.row;
+          const col = table.dataset.col;
+          const action = arenaModDialog.dataset.action;
+          arenaMod(row, col, action, amt);
+          arenaModDialog.close();
+        }
+      })
+
+      div.append(input, modButton);
+      arenaModDialog.append(div, p);
+    })();
+
+    async function arenaMod(row, col, action, amt){
+      const options = {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: `row=${row}&col=${col}&action=${action}&amt=${amt}`
+      };
+      try{
+        const res = await fetch('/teamvol/', options);
+        if(!res.ok) throw new Error('/teamvol/ failed to load');
+        const text = await res.text();
+        if(text.includes('資源パックを開ける')) {
+          open('/craft', '_blank');
+          return;
+        }
+        if(text !== '改造成功') throw new Error(text);
+        wood = wood - 25 * Math.trunc(amt);
+        steel = steel - 25 * Math.trunc(amt);
+        arenaResult.textContent = text;
+        arenaResult.show();
+      } catch (e) {
+        arenaResult.textContent = e;
+        arenaResult.show();
+      }
+    }
   })();
 
   const arenaResult = document.createElement('dialog');
@@ -96,50 +247,19 @@
   arenaResult.style.margin = '0';
   arenaResult.style.textAlign = 'left';
   arenaResult.style.overflowY = 'auto';
-  window.addEventListener('click', (event) => {
+  window.addEventListener('mousedown', (event) => {
+    //event.stopPropagation();
     if (!arenaResult.contains(event.target)) {
       arenaResult.close();
     }
+    if (!arenaModDialog.contains(event.target)) {
+      arenaModDialog.close();
+    }
+    if (!panel.contains(event.target)) {
+      panel.style.display = 'none';
+    }
   });
   arenaField.append(arenaResult);
-
-  // add buttons and select to custom menu
-  (()=>{
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.style.flexShrink = '1';
-    button.style.flexGrow = '0';
-    button.style.whiteSpace = 'nowrap';
-    button.style.overflow = 'hidden';
-    button.style.boxSizing = 'border-box';
-
-    if (vw < 768) {
-      sortSelect.style.fontSize = '60%';
-      button.style.fontSize = '60%';
-      progressBarContainer.style.fontSize = '60%';
-    }
-
-    const equipButton = button.cloneNode();
-    equipButton.textContent = '■装備';
-    equipButton.addEventListener('click',()=>{panel.style.display='flex'});
-  
-    const cellButton = button.cloneNode();
-    cellButton.textContent = '詳細取得/更新';
-    cellButton.addEventListener('click',getArenaInfo);
-  
-    const refreshButton = button.cloneNode();
-    refreshButton.textContent = '陣地更新';
-    refreshButton.addEventListener('click',refreshAreaInfo);
-
-
-    const div = document.createElement('div');
-    div.style.display = 'flex';
-    div.style.flexWrap = 'nowrap';
-    div.style.gap = '2px';
-    div.style.justifyContent = 'center';
-    div.append(sortSelect, equipButton, refreshButton, cellButton);
-    customMenu.append(div);
-  })();
   document.body.append(arenaField);
   
   const grid = document.querySelector('.grid');
@@ -160,12 +280,13 @@
   panel.style.border = 'solid 1px #000';
   panel.style.height = '100vh';
   panel.style.width = '400px';
-  panel.style.maxWidth = '80vw';
+  panel.style.maxWidth = '75vw';
   panel.style.padding = '2px';
   panel.style.zIndex = '1';
   panel.style.textAlign = 'left';
   panel.style.display = 'none';
   panel.style.flexDirection = 'column';
+
   (()=>{
     let currentEquip = [];
 
@@ -183,6 +304,8 @@
     button.style.background = '#ccc';
     button.style.color = '#000';
     button.style.margin = '2px';
+    button.style.height = '42px';
+    button.style.lineHeight = '1';
 
     let currentMode = 'equip';
     const presetList = document.createElement('ul');
@@ -211,15 +334,18 @@
       const div = document.createElement('div');
       div.style.marginTop = '2px';
       div.style.lineHeight = 'normal';
+      const buttonsContainer = document.createElement('div');
+      buttonsContainer.style.display = 'flex';
   
       const closeButton = button.cloneNode();
       closeButton.textContent = '×';
-      closeButton.style.position = 'absolute';
-      closeButton.style.height = '32px';
-      closeButton.style.width = '32px';
-      closeButton.style.top = '2px';
-      closeButton.style.right = '2px';
-      closeButton.style.lineHeight = '16px';
+      closeButton.style.marginLeft = 'auto';
+      closeButton.style.background = 'none';
+      closeButton.style.border = 'none';
+      closeButton.style.height = '40px';
+      closeButton.style.width = '40px';
+      closeButton.style.fontSize = '32px';
+      closeButton.style.lineHeight = '1';
       closeButton.addEventListener('click', ()=>{
         panel.style.display = 'none';
       })
@@ -245,9 +371,9 @@
       */
       const backupButton = button.cloneNode();
       backupButton.textContent = 'バックアップ';
-      backupButton.addEventListener('click', ()=>{
-        backupDialog.showModal();
-      })
+      backupButton.style.height = '42px';
+      backupButton.style.lineHeight = '1';
+      backupButton.style.fontSize = '80%';
 
       const backupDialog = document.createElement('dialog');
       backupDialog.style.background = '#fff';
@@ -261,14 +387,7 @@
         textarea.style.width = '70vw';
         textarea.style.height = '50vh';
         textarea.style.overflowX = 'auto';
-        const data = localStorage.getItem('equipPresets');
-        if(data) {
-          const json = JSON.parse(data);
-          const formattedString = Object.entries(json)
-            .map(([key, value]) => {return `  "${key}": ${JSON.stringify(value)}`;})
-            .join(',\n');
-          textarea.value = `{\n${formattedString}\n}`;
-        }
+
         const div = document.createElement('div');
         const saveButton = button.cloneNode();
         saveButton.textContent = '保存';
@@ -284,6 +403,17 @@
         closeButton.addEventListener('click', ()=>{backupDialog.close()})
         div.append(saveButton, copyButton, closeButton);
         backupDialog.append(textarea, div);
+        backupButton.addEventListener('click', ()=>{
+          const data = localStorage.getItem('equipPresets');
+          if(data) {
+            const json = JSON.parse(data);
+            const formattedString = Object.entries(json)
+              .map(([key, value]) => {return `  "${key}": ${JSON.stringify(value)}`;})
+              .join(',\n');
+            textarea.value = `{\n${formattedString}\n}`;
+          }
+          backupDialog.showModal();
+        })
       })();
 
       [removeButton].forEach(button => {
@@ -294,7 +424,7 @@
             return;
           }
           setMode(mode, button);
-        })        
+        })
       });
 
       function setMode(mode, button) {
@@ -323,10 +453,11 @@
       stat.style.height = '24px';
       stat.style.fontSize = '16px';
       stat.style.whiteSpace = 'nowrap';
-      stat.style.overflowX = 'hidden';
+      stat.style.overflow = 'hidden';
       stat.classList.add('equip-preset-stat');
   
-      div.append(closeButton, addButton, removeButton, backupButton, backupDialog, stat);
+      buttonsContainer.append(addButton, removeButton, backupButton, closeButton);
+      div.append(buttonsContainer, backupDialog, stat);
       panel.append(div);
     })();
   
@@ -342,11 +473,14 @@
     const closeButton = button.cloneNode();
     closeButton.textContent = '×';
     closeButton.style.position = 'absolute';
-    closeButton.style.height = '32px';
-    closeButton.style.width = '32px';
+    closeButton.style.background = 'none';
+    closeButton.style.border = 'none';
+    closeButton.style.height = '40px';
+    closeButton.style.width = '40px';
+    closeButton.style.fontSize = '32px';
     closeButton.style.top = '2px';
     closeButton.style.right = '2px';
-    closeButton.style.lineHeight = '16px';
+    closeButton.style.lineHeight = '1';
     closeButton.addEventListener('click', ()=>{equipField.close()});
     const tableContainer = document.createElement('div');
     tableContainer.style.height = '75vh';
@@ -362,6 +496,7 @@
     })
     rankSelect.addEventListener('change', ()=>{filterItemsByRank(rankSelect.value)});
     const bar = document.createElement('div');
+    bar.style.textAlign = 'center';
     const p = document.createElement('p');
     p.classList.add('equip-preset-selected');
     p.style.background = '#fff';
@@ -400,6 +535,7 @@
       dialog.style.background = '#fff';
       dialog.style.border = 'solid 1px #000';
       dialog.style.color = '#000';
+      dialog.style.textAlign = 'center';
       const presetNameInput = document.createElement('input');
       presetNameInput.placeholder = 'プリセット名';
       presetNameInput.style.background = '#fff';
@@ -410,9 +546,20 @@
       const confirmButton = button.cloneNode();
       confirmButton.textContent = '保存';
       confirmButton.addEventListener('click', ()=>{
+        if(presetNameInput.value.trim() === '') return;
         saveEquipPreset(presetNameInput.value.substring(0,32), selectedEquips);
         dialog.close();
         presetNameInput.value = '';
+      })
+      presetNameInput.addEventListener('keydown', (e)=>{
+        if (e.key === "Enter") {
+          e.preventDefault(); // これが無いとdialogが閉じない
+          if(presetNameInput.value.trim() === '') return;
+          saveEquipPreset(presetNameInput.value.substring(0,32), selectedEquips);
+          console.log(dialog);
+          dialog.close();
+          presetNameInput.value = '';  
+        }
       })
       const cancelButton = button.cloneNode();
       cancelButton.textContent = 'キャンセル';
@@ -430,7 +577,7 @@
 
     bar.append(rankSelect, equipSwitchButton, registerButton, p);
     equipField.append(bar, tableContainer, closeButton);
-    document.body.append(equipField);
+    panel.append(equipField);
 
     let weaponTable, armorTable, necklaceTable;
     let selectedEquips = {id:[], rank:[]};
@@ -711,9 +858,9 @@
   }
   async function getArenaInfo(){
     refreshAreaInfo();
-    grid.style.gridTemplateRows = grid.style.gridTemplateRows.replace('35px','65px'),
-    grid.style.gridTemplateColumns = grid.style.gridTemplateColumns.replace('35px','105px'),
-    grid.parentNode.style.height = null,
+    grid.style.gridTemplateRows = grid.style.gridTemplateRows.replace('35px','65px');
+    grid.style.gridTemplateColumns = grid.style.gridTemplateColumns.replace('35px','105px');
+    grid.parentNode.style.height = null;
     grid.parentNode.style.padding = '20px 0';
     const cols = Number(grid.style.gridTemplateColumns.match(/repeat\((\d+),/)[1]);
     if (vw < 768 && cols > 8) {
@@ -729,7 +876,7 @@
         res.ok?res.text():Promise.reject('res.ng')
       )
       .then(text => {
-        let doc = new DOMParser().parseFromString(text,'text/html'),
+        let doc = new DOMParser().parseFromString(text, 'text/html'),
         h1 = doc?.querySelector('h1')?.textContent;
         if(h1 !== 'どんぐりチーム戦い') return Promise.reject(`title.ng [${row}][${col}][${h1}]`);
         let cond = doc.querySelector('small')?.textContent || '';
@@ -741,11 +888,11 @@
         p[1].textContent = holder;
         p[0].style.margin = '0';
         p[1].style.margin = '0';
-        cell = elm.cloneNode();
-        cell.append(p[0],p[1]),
-        cell.style.overflow = 'hidden',
-        cell.style.width = '100px',
-        cell.style.height = '60px',
+        const cell = elm.cloneNode();
+        cell.append(p[0],p[1]);
+        cell.style.overflow = 'hidden';
+        cell.style.width = '100px';
+        cell.style.height = '60px';
         cell.style.borderWidth = '3px';
         cell.addEventListener('click', ()=>{
           fetch(url)
@@ -756,17 +903,7 @@
             if(h1 !== 'どんぐりチーム戦い') return Promise.reject(`title.ng`);
             const table = doc.querySelector('table');
             if(!table) return Promise.reject(`table.ng`);
-            table.style.marginLeft = '-16px';
-            arenaField.querySelector('table').replaceWith(table);
-            scaleContentsToFit(arenaField,table);
-            const forms = table.querySelectorAll('form');
-            forms[0].addEventListener('submit', (event) => {
-              event.preventDefault();
-              const formData = new FormData(forms[0]);
-              arenaChallenge(formData);
-            })
-            forms[1].target = '_blank';
-            forms[2].target = '_blank';
+            showArenaTable(table);
           })
           arenaField.show();
         });
@@ -782,10 +919,51 @@
   
   observer.observe(grid, { attributes: true, childList: true, subtree: true });
 
-  async function arenaChallenge (formData){
+  function showArenaTable(table){
+    const row = table.querySelector('tbody > tr');
+    if(!row) return;
+    const coordinate = row.cells[0].textContent.replace('アリーナ','').trim();
+    const holderName = row.cells[1].querySelector('strong');
+    const equipCond = row.cells[1].querySelector('small');
+    const teamName = row.cells[2].textContent;
+    const statistics = row.cells[3].textContent.match(/\d+/g);
+    const modCounts = row.cells[4].textContent.match(/\d+/g);
+    const modders = row.cells[5].textContent;
+
+    const newTable = document.createElement('table');
+    const tbody = document.createElement('tbody');
+    const tr = tbody.insertRow(0);
+
+    const cell = document.createElement('td');
+    cell.style.textAlign = 'center';
+    const cells = [];
+    for(let i=0; i<4; i++){
+      cells.push(cell.cloneNode());
+      tr.append(cells[i]);
+    }
+    cells[0].append(coordinate, document.createElement('hr'), equipCond);
+    cells[1].append(holderName, document.createElement('br'), `${teamName}`);
+    cells[2].innerText = `勝:${statistics[0]}\n負:${statistics[1]}\n引:${statistics[2]}`;
+    cells[3].innerText = `強化:${modCounts[0]}\n弱体:${modCounts[1]}\n${modders}人`;
+    cells[3].style.whiteSpace = 'nowrap';
+
+    const [dataRow, dataCol] = coordinate.match(/\d+/g);
+    newTable.dataset.row = dataRow;
+    newTable.dataset.col = dataCol;
+    newTable.style.background = '#fff';
+    newTable.style.color = '#000';
+    newTable.style.margin = '0';
+    newTable.append(tbody);
+    arenaField.querySelector('table').replaceWith(newTable);
+  }
+
+  async function arenaChallenge (row, col){
     const options = {
       method: 'POST',
-      body: formData,
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: `row=${row}&col=${col}`
     };
     try {
       const response = await fetch('/teamchallenge', options);
@@ -866,9 +1044,8 @@
     fetch('https://donguri.5ch.net/')
     .then(res => res.ok ? res.text() : Promise.reject('res.ng'))
     .then(text => {
-      const doc = new DOMParser().parseFromString(text,  'text/html'),
-      //headerDiv = document.body.querySelector('header > div'),
-      container = doc.querySelector('div.stat-block:nth-child(2)>div:nth-child(5)').cloneNode(true);
+      const doc = new DOMParser().parseFromString(text, 'text/html'),
+      container = doc.querySelector('div.stat-block:nth-child(2)>div:nth-child(5)').cloneNode(true),
       progressBar = container.lastElementChild,
       barBody = progressBar.lastElementChild,
       percentage = parseInt(barBody.textContent);
@@ -906,7 +1083,11 @@
       barBody.style.boxSizing = 'border-box';
       barBody.style.color = 'white';
       barBody.style.width = barBody.style.width;
-      progressBarContainer.replaceChildren(container)
+      progressBarContainer.replaceChildren(container);
+
+      const statBlock = doc.querySelector('.stat-block');
+      wood = statBlock.textContent.match(/木材の数: (\d+)/)[1];
+      steel = statBlock.textContent.match(/鉄の数: (\d+)/)[1];
     })
     .catch(e => console.error(e))
   }
