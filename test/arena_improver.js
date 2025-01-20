@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         donguri arena assist tool
-// @version      1.0c_test
+// @version      1.0c
 // @description  fix arena ui and add functions
 // @author       7234e634
 // @match        https://donguri.5ch.net/teambattle
@@ -100,9 +100,7 @@
   arenaField.style.color = '#000';
   arenaField.style.border = 'solid 1px #000';
   arenaField.style.marginLeft = '1px';
-  if(vw > 768) {
-    arenaField.style.maxWidth = '50vw';
-  }
+  arenaField.style.maxWidth = '480px';
   const arenaModDialog = document.createElement('dialog');
   let wood, steel
 
@@ -556,7 +554,6 @@
           e.preventDefault(); // これが無いとdialogが閉じない
           if(presetNameInput.value.trim() === '') return;
           saveEquipPreset(presetNameInput.value.substring(0,32), selectedEquips);
-          console.log(dialog);
           dialog.close();
           presetNameInput.value = '';  
         }
@@ -867,7 +864,7 @@
       grid.style.gridTemplateColumns = 'repeat(8, 105px)';
     }
 
-    [...document.querySelectorAll('.cell')].forEach((elm)=>{
+    [...document.querySelectorAll('.cell')].forEach(elm => {
       let row = elm.dataset.row,
       col = elm.dataset.col,
       url = `https://donguri.5ch.net/teambattle?r=${row}&c=${col}`;
@@ -918,6 +915,29 @@
   });
   
   observer.observe(grid, { attributes: true, childList: true, subtree: true });
+
+  (()=>{
+    [...document.querySelectorAll('.cell')].forEach(elm => {
+      const cell = elm.cloneNode();
+      elm.replaceWith(cell);
+      cell.addEventListener('click', ()=>{
+        let row = elm.dataset.row,
+        col = elm.dataset.col,
+        url = `https://donguri.5ch.net/teambattle?r=${row}&c=${col}`;  
+        fetch(url)
+        .then(res => res.ok?res.text():Promise.reject('res.ng'))
+        .then(text => {
+          const doc = new DOMParser().parseFromString(text,'text/html');
+          const h1 = doc?.querySelector('h1')?.textContent;
+          if(h1 !== 'どんぐりチーム戦い') return Promise.reject(`title.ng`);
+          const table = doc.querySelector('table');
+          if(!table) return Promise.reject(`table.ng`);
+          showArenaTable(table);
+        })
+        arenaField.show();
+      });
+    })
+  })();
 
   function showArenaTable(table){
     const row = table.querySelector('tbody > tr');
