@@ -288,7 +288,7 @@
   menuDialog.style.left = 'auto';
   menuDialog.style.background = '#f0f0f0';
   menuDialog.style.border = 'solid 1px #000';
-  menuDialog.style.height = '100vh';
+  menuDialog.style.height = '96vh';
   menuDialog.style.width = '400px';
   menuDialog.style.maxWidth = '75vw';
   menuDialog.style.padding = '2px';
