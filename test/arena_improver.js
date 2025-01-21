@@ -355,12 +355,6 @@
       autoJoinDialog.showModal();
       autoJoin();
     })
-    const autoJoinInterval = document.createElement('input');
-    autoJoinInterval.type = 'number';
-    autoJoinInterval.placeholder = '600';
-    autoJoinInterval.style.width = '64px';
-    autoJoinInterval.style.background = '#fff';
-    autoJoinInterval.style.color = '#000';
 
     const autoJoinDialog = document.createElement('dialog');
     autoJoinDialog.style.background = '#fff';
@@ -371,7 +365,7 @@
     autoJoinDialog.style.textAlign = 'center';
     autoJoinDialog.classList.add('auto-join');
     autoJoinDialog.addEventListener('show', (event) => {
-      event.preventDefault(); // 自動フォーカスを防ぐ
+      event.preventDefault(); // 自動フォーカスを防ぐ?
     });
 
     (()=>{
@@ -388,6 +382,15 @@
       log.style.flexGrow = '1';
       log.style.textAlign = 'left';
       log.classList.add('auto-join-log');
+
+      const label = document.createElement('label');
+      const autoJoinInterval = document.createElement('input');
+      autoJoinInterval.type = 'number';
+      autoJoinInterval.placeholder = '600';
+      autoJoinInterval.style.width = '64px';
+      autoJoinInterval.style.background = '#fff';
+      autoJoinInterval.style.color = '#000';
+      label.append(autoJoinInterval, '秒');
   
       const closeButton = button.cloneNode();
       closeButton.textContent = '自動参加モードを終了';
@@ -398,7 +401,7 @@
       p.textContent = 'この画面を開いたままにしておくこと。最短600秒';
       p.style.margin = '0';
 
-      container.append(log, autoJoinInterval, '秒', p, closeButton);
+      container.append(log, label, p, closeButton);
       autoJoinDialog.append(container);
     })();
     container.append(h2, autoJoinButton, settingsMenu, footer)
