@@ -103,7 +103,7 @@
   const arenaField = document.createElement('dialog');
   arenaField.style.position = 'fixed';
   arenaField.style.width = '100%';
-  arenaField.style.bottom = '20px';
+  arenaField.style.bottom = '2vh';
   arenaField.style.background = 'none';
   arenaField.style.background = '#fff';
   arenaField.style.color = '#000';
@@ -176,7 +176,7 @@
       arenaModDialog.style.border = 'solid 1px #000';
       arenaModDialog.style.color = '#000';
       arenaModDialog.style.position = 'fixed';
-      arenaModDialog.style.bottom = '20px';
+      arenaModDialog.style.bottom = '2vh';
 
       const div = document.createElement('div');
       div.style.display = 'flex';
@@ -244,7 +244,7 @@
   const arenaResult = document.createElement('dialog');
   arenaResult.style.position = 'fixed';
   arenaResult.style.width = '60%';
-  arenaResult.style.bottom = '20px';
+  arenaResult.style.bottom = '2vh';
   arenaResult.style.left = 'auto';
   arenaResult.style.height = '70vh';
   arenaResult.style.maxHeight = '640px';
