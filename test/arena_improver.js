@@ -370,25 +370,37 @@
     autoJoinDialog.style.fontSize = '80%';
     autoJoinDialog.style.textAlign = 'center';
     autoJoinDialog.classList.add('auto-join');
+    autoJoinDialog.addEventListener('show', (event) => {
+      event.preventDefault(); // 自動フォーカスを防ぐ
+    });
 
-    const log = document.createElement('div');
-    log.style.margin = '2px';
-    log.style.border = 'solid 1px #000';
-    log.style.overflow = 'auto';
-    log.style.height = '80%';
-    log.style.textAlign = 'left';
+    (()=>{
+      const container = document.createElement('div');
+      container.style.display = 'flex';
+      container.style.flexDirection = 'column';
+      container.style.height = '100%';
+      container.style.color = '#000';
 
-    const closeButton = button.cloneNode();
-    closeButton.textContent = '自動参加モードを終了';
-    closeButton.addEventListener('click', ()=>{
-      autoJoinDialog.close();
-    })
+      const log = document.createElement('div');
+      log.style.margin = '2px';
+      log.style.border = 'solid 1px #000';
+      log.style.overflow = 'auto';
+      log.style.flexGrow = '1';
+      log.style.textAlign = 'left';
+      log.classList.add('auto-join-log');
+  
+      const closeButton = button.cloneNode();
+      closeButton.textContent = '自動参加モードを終了';
+      closeButton.addEventListener('click', ()=>{
+        autoJoinDialog.close();
+      })
+      const p = document.createElement('p');
+      p.textContent = 'この画面を開いたままにしておくこと。最短600秒';
+      p.style.margin = '0';
 
-    const p = document.createElement('p');
-    p.textContent = 'この画面を開いたままにしておくこと。最短600秒';
-    p.style.margin = '0';
-
-    autoJoinDialog.append(log, autoJoinInterval, '秒', p, closeButton);
+      container.append(log, autoJoinInterval, '秒', p, closeButton);
+      autoJoinDialog.append(container);
+    })();
     container.append(h2, autoJoinButton, settingsMenu, footer)
     menuDialog.append(container, autoJoinDialog);
   })();
@@ -1214,7 +1226,7 @@
       return value;
     }
   
-    const logArea = dialog.querySelector('div');
+    const logArea = dialog.querySelector('.auto-join-log');
     const headers = { 'Content-Type': 'application/x-www-form-urlencoded' };
     const regions = [];
     for (let i = 0; i < 20; i++) {
@@ -1262,7 +1274,7 @@
             // 装備しているものは改造が多すぎます。改造の少ない他のものをお試しください
             nextStep = [index + 1, 2];
           } else if (errorMesssages.retry.some(v => text.includes(v))) {
-            nextStep = [index, 2];
+            nextStep = [index, 8];
           } else if (errorMesssages.reset.some(v => text.includes(v))) { // 発生しない?
             nextStep = [0, 2];
           } else if (errorMesssages.quit.some(v => text.includes(v))) {
