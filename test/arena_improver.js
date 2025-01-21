@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         donguri arena assist tool
-// @version      1.0c
+// @version      1.1a
 // @description  fix arena ui and add functions
 // @author       7234e634
 // @match        https://donguri.5ch.net/teambattle
@@ -11,17 +11,17 @@
   const vw = Math.min(document.documentElement.clientWidth, window.innerWidth || 0);
 
   const header = document.querySelector('header');
-  const customMenu = document.createElement('div');
-  customMenu.style.position = 'fixed';
-  customMenu.style.top = '0';
-  customMenu.style.zIndex = '1';
-  customMenu.style.background = '#fff';
-  customMenu.style.border = 'solid 1px #000';
-  customMenu.style.marginLeft = '-8px';
+  const toolbar = document.createElement('div');
+  toolbar.style.position = 'fixed';
+  toolbar.style.top = '0';
+  toolbar.style.zIndex = '1';
+  toolbar.style.background = '#fff';
+  toolbar.style.border = 'solid 1px #000';
+  toolbar.style.marginLeft = '-8px';
   header.querySelector('h4').style.display = 'none';
-  header.append(customMenu);
+  header.append(toolbar);
   const progressBarContainer = document.createElement('div');
-  customMenu.append(progressBarContainer);
+  toolbar.append(progressBarContainer);
 
   // add buttons and select to custom menu
   (()=>{
@@ -37,16 +37,25 @@
       button.style.fontSize = '60%';
       progressBarContainer.style.fontSize = '60%';
     }
+
+    const menuButton = button.cloneNode();
+    menuButton.textContent = '■メニュー';
+    menuButton.addEventListener('click', ()=>{
+      menuDialog.show();
+    })
+  
+    const equipButton = button.cloneNode();
+    equipButton.textContent = '■装備';
+    equipButton.addEventListener('click', ()=>{
+      panel.style.display = 'flex';
+    });
+  
     const sortButton = button.cloneNode();
     sortButton.textContent = '▼ソート';
     sortButton.addEventListener('click', ()=>{
       sortMenu.style.display = 'flex';
     });
-  
-    const equipButton = button.cloneNode();
-    equipButton.textContent = '■装備';
-    equipButton.addEventListener('click',()=>{panel.style.display='flex'});
-  
+
     const cellButton = button.cloneNode();
     cellButton.textContent = '詳細取得/更新';
     cellButton.addEventListener('click',getArenaInfo);
@@ -60,7 +69,7 @@
     main.style.flexWrap = 'nowrap';
     main.style.gap = '2px';
     main.style.justifyContent = 'center';
-    main.append(equipButton, sortButton, refreshButton, cellButton);
+    main.append(menuButton, equipButton, sortButton, refreshButton, cellButton);
 
     
     const defaultSort = button.cloneNode();
@@ -83,8 +92,8 @@
     sortMenu.style.justifyContent = 'center';
     sortMenu.append(defaultSort, condSort);
 
-    customMenu.append(main, sortMenu);
-    customMenu.addEventListener('mousedown', (event)=>{
+    toolbar.append(main, sortMenu);
+    toolbar.addEventListener('mousedown', (event)=>{
       if (!sortMenu.contains(event.target)) {
         sortMenu.style.display = 'none';
       }
@@ -94,7 +103,7 @@
   const arenaField = document.createElement('dialog');
   arenaField.style.position = 'fixed';
   arenaField.style.width = '100%';
-  arenaField.style.bottom = '10px';
+  arenaField.style.bottom = '20px';
   arenaField.style.background = 'none';
   arenaField.style.background = '#fff';
   arenaField.style.color = '#000';
@@ -167,7 +176,7 @@
       arenaModDialog.style.border = 'solid 1px #000';
       arenaModDialog.style.color = '#000';
       arenaModDialog.style.position = 'fixed';
-      arenaModDialog.style.bottom = '10px';
+      arenaModDialog.style.bottom = '20px';
 
       const div = document.createElement('div');
       div.style.display = 'flex';
@@ -234,24 +243,27 @@
 
   const arenaResult = document.createElement('dialog');
   arenaResult.style.position = 'fixed';
-  arenaResult.style.width = '50%';
-  arenaResult.style.bottom = '10px';
+  arenaResult.style.width = '60%';
+  arenaResult.style.bottom = '20px';
   arenaResult.style.left = 'auto';
-  arenaResult.style.height = '80vh';
+  arenaResult.style.height = '70vh';
+  arenaResult.style.maxHeight = '640px';
   arenaResult.style.background = '#fff';
   arenaResult.style.color = '#000';
-  arenaResult.style.fontSize = '80%';
+  arenaResult.style.fontSize = '70%';
   arenaResult.style.border = 'solid 1px #000';
   arenaResult.style.margin = '0';
   arenaResult.style.textAlign = 'left';
   arenaResult.style.overflowY = 'auto';
   window.addEventListener('mousedown', (event) => {
-    //event.stopPropagation();
     if (!arenaResult.contains(event.target)) {
       arenaResult.close();
     }
     if (!arenaModDialog.contains(event.target)) {
       arenaModDialog.close();
+    }
+    if (!menuDialog.contains(event.target)) {
+      menuDialog.close();
     }
     if (!panel.contains(event.target)) {
       panel.style.display = 'none';
@@ -268,6 +280,120 @@
   table.parentNode.style.maxWidth = '100%';
   table.parentNode.style.overflow = 'auto';
   table.parentNode.style.height = '60vh';
+
+  //-- メニュー --//
+  const menuDialog = document.createElement('dialog');
+  menuDialog.style.position = 'fixed';
+  menuDialog.style.top = '0';
+  menuDialog.style.left = 'auto';
+  menuDialog.style.background = '#f0f0f0';
+  menuDialog.style.border = 'solid 1px #000';
+  menuDialog.style.height = '100vh';
+  menuDialog.style.width = '400px';
+  menuDialog.style.maxWidth = '75vw';
+  menuDialog.style.padding = '2px';
+  menuDialog.style.margin = '0';
+  menuDialog.style.zIndex = '2';
+  menuDialog.style.textAlign = 'left';
+  (()=>{
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.style.borderRadius = 'unset';
+    button.style.border = 'solid 1px #000';
+    button.style.background = '#ccc';
+    button.style.color = '#000';
+    button.style.margin = '2px';
+    button.style.height = '42px';
+    button.style.lineHeight = '1';
+
+    const container = document.createElement('div');
+    container.style.display = 'flex';
+    container.style.flexDirection = 'column';
+    container.style.height = '100%';
+    container.style.color = '#000';
+
+    const h2 = document.createElement('h2');
+    h2.textContent = 'メニュー・設定'
+    h2.style.fontSize = '1rem';
+    h2.style.margin = '2px';
+
+    const settingsMenu = document.createElement('div');
+    settingsMenu.style.flexGrow = '1';
+    settingsMenu.style.overflowY = 'auto';
+    settingsMenu.textContent = '(ここに設定項目を追加予定)';
+    
+    const footer = document.createElement('div');
+    footer.style.fontSize = '80%';
+    footer.style.textAlign = 'right';
+
+    (()=>{
+      const link = document.createElement('a');
+      link.style.color = '#666';
+      link.style.textDecoration = 'underline';
+      link.textContent = 'arena assist tool - v1.1a';
+      link.href = 'https://donguri-k.github.io/tools/arena-assist-tool';
+      link.target = '_blank';
+      const author = document.createElement('input');
+      author.value = '作者 [ID: 7234e634]';
+      author.style.color = '#666';
+      author.style.background = 'none';
+      author.style.margin = '2px';
+      author.style.padding = '2px';
+      author.style.width = 'fit-content';
+      author.readOnly = 'true';
+      author.addEventListener('click',()=>{
+        author.select();
+        navigator.clipboard.writeText('7234e634');
+      })
+      footer.append(link, author);
+    })();
+    
+    const autoJoinButton = button.cloneNode();
+    autoJoinButton.textContent = '自動参加モード';
+    autoJoinButton.style.width = '100%';
+    autoJoinButton.addEventListener('click',()=>{
+      autoJoinDialog.showModal();
+      autoJoin();
+    })
+    const autoJoinInterval = document.createElement('input');
+    autoJoinInterval.type = 'number';
+    autoJoinInterval.placeholder = '600';
+    autoJoinInterval.style.width = '64px';
+    autoJoinInterval.style.background = '#fff';
+    autoJoinInterval.style.color = '#000';
+
+    const autoJoinDialog = document.createElement('dialog');
+    autoJoinDialog.style.background = '#fff';
+    autoJoinDialog.style.color = '#000';
+    autoJoinDialog.style.width = '90vw';
+    autoJoinDialog.style.height = '95vh';
+    autoJoinDialog.style.fontSize = '80%';
+    autoJoinDialog.style.textAlign = 'center';
+    autoJoinDialog.classList.add('auto-join');
+
+    const log = document.createElement('div');
+    log.style.margin = '2px';
+    log.style.border = 'solid 1px #000';
+    log.style.overflow = 'auto';
+    log.style.height = '80%';
+    log.style.textAlign = 'left';
+
+    const closeButton = button.cloneNode();
+    closeButton.textContent = '自動参加モードを終了';
+    closeButton.addEventListener('click', ()=>{
+      autoJoinDialog.close();
+    })
+
+    const p = document.createElement('p');
+    p.textContent = 'この画面を開いたままにしておくこと。最短600秒';
+    p.style.margin = '0';
+
+    autoJoinDialog.append(log, autoJoinInterval, '秒', p, closeButton);
+    container.append(h2, autoJoinButton, settingsMenu, footer)
+    menuDialog.append(container, autoJoinDialog);
+  })();
+  
+  document.body.append(menuDialog);
 
   //-- 装備 --//
   const panel = document.createElement('div');
@@ -722,11 +848,13 @@
     }
     async function setPresetItems (presetName) {
       const stat = document.querySelector('.equip-preset-stat');
-      stat.textContent = '装備中...';
+      if (stat.textContent === '装備中...') return;
       const equipPresets = JSON.parse(localStorage.getItem('equipPresets'));
       const fetchPromises = equipPresets[presetName].id
-        .filter(id => id !== undefined && id !== null && !currentEquip.includes(id)) //未登録or既に装備中の部位は除外
+        .filter(id => id !== undefined && id !== null && !currentEquip.includes(id)) // 未登録or既に装備中の部位は除外
         .map(id => fetch('https://donguri.5ch.net/equip/' + id));
+
+      stat.textContent = '装備中...';
 
       try {
         const responses = await Promise.all(fetchPromises);
@@ -752,11 +880,12 @@
         } else if (!titles.every(title => title === 'アイテムバッグ')) {
           throw new Error('装備エラー');
         }
-        stat.textContent = '完了';
-        currentEquip = equipPresets[presetName].id;
       } catch (e) {
         stat.textContent = e;
         currentEquip = [];
+      } finally {
+        stat.textContent = '完了: ' + presetName;
+        currentEquip = equipPresets[presetName].id;
       }
     }
     function removePresetItems(presetName) {
@@ -991,10 +1120,23 @@
         throw new Error('/teamchallenge res.ng');
       }
       const text = await response.text();
+      arenaResult.innerText = text;
+      /*
       arenaResult.style.display = 'block';
       arenaResult.innerText = text;
       arenaResult.scrollTop = arenaResult.scrollHeight;
       arenaResult.style.display = '';
+      */
+      if(text.includes('\n')) {
+        const lastLine = text.trim().split('\n').pop();
+        lastLine + '\n' + text;
+        const p = document.createElement('p');
+        p.textContent = lastLine;
+        p.style.fontWeight = 'bold';
+        p.style.padding = '0';
+        p.style.margin = '0';
+        arenaResult.prepend(p);
+      }
       arenaResult.show();
     } catch (e) {
       arenaResult.innerText = e;
@@ -1060,6 +1202,81 @@
     cells.forEach(cell => grid.append(cell));
   }
 
+  function autoJoin() {
+    const dialog = document.querySelector('.auto-join');
+    const interval = () => {
+      const input = dialog.querySelector('input');
+      let value = Number(input.value);
+      if (!value || value < 600) {
+        input.value = 600;
+        value = 600;
+      }
+      return value;
+    }
+  
+    const logArea = dialog.querySelector('div');
+    const headers = { 'Content-Type': 'application/x-www-form-urlencoded' };
+    const regions = [];
+    for (let i = 0; i < 20; i++) {
+      for (let j = i - 1; j >= 0; j--) {
+        regions.push([i, j], [j, i]);
+      }
+      regions.push([i, i]);
+    }
+  
+    function logMessage(message) {
+      const timestamp = new Date().toLocaleString('sv-SE');
+      logArea.prepend(`[${timestamp}] `, message, document.createElement('br'));
+    }
+  
+    const errorMesssages = {
+      retry: [
+        'あなたのチームは動きを使い果たしました。しばらくお待ちください。',
+        'ng<>too fast'
+      ],
+      reset: [
+        'No region',
+      ],
+      quit: [
+        '武器と防具を装備しなければなりません。',
+        'どんぐりが見つかりませんでした。'
+      ]
+    }
+    function challenge(index = 0) {
+      if(!dialog.open) return;
+      logMessage('challenge: ' + regions[index]);
+      const body = `row=${regions[index][0]}&col=${regions[index][1]}`;
+      
+      fetch('/teamchallenge', {
+        method: 'POST',
+        body: body,
+        headers: headers
+      })
+        .then(response => response.ok ? response.text() : Promise.reject(`res.ng[${response.status}]`))
+        .catch(error => logMessage(error))
+        .then(text => {
+          let nextStep = [0, interval()];
+          if (text.startsWith('装備している')) {
+            // 装備している防具と武器が力不足です。
+            // 装備している防具と武器が強すぎます
+            // 装備しているものは改造が多すぎます。改造の少ない他のものをお試しください
+            nextStep = [index + 1, 2];
+          } else if (errorMesssages.retry.some(v => text.includes(v))) {
+            nextStep = [index, 2];
+          } else if (errorMesssages.reset.some(v => text.includes(v))) { // 発生しない?
+            nextStep = [0, 2];
+          } else if (errorMesssages.quit.some(v => text.includes(v))) {
+            logMessage(text + '[停止]');
+            return;
+          }
+          logMessage(text.slice(0, 80));
+          logMessage(`next(${nextStep[1]}sec): ${regions[nextStep[0]]}`);
+          setTimeout(() => challenge(nextStep[0]), 1000 * nextStep[1]);
+        });
+    }
+    challenge();
+  };
+  
   function drawProgressBar(){
     fetch('https://donguri.5ch.net/')
     .then(res => res.ok ? res.text() : Promise.reject('res.ng'))
@@ -1113,7 +1330,30 @@
   }
 
   drawProgressBar();
-  setInterval(() => {
-    drawProgressBar();
-  }, 18000);
+  (()=>{
+    let intervalId;
+    function startInterval() {
+      if (!intervalId) {
+        intervalId = setInterval(() => {
+          drawProgressBar();
+        }, 18000);
+      }
+    }
+    function stopInterval() {
+      if (intervalId) {
+        clearInterval(intervalId);
+        intervalId = null;
+      }
+    }
+    const dialog = document.querySelector('.auto-join');
+    const observer = new MutationObserver(() => {
+      dialog.open ? stopInterval() : startInterval();
+    });
+    
+    observer.observe(dialog, {
+      attributes: true, 
+      attributeFilter: ['open']
+    });
+    startInterval();
+  })();
 })();
