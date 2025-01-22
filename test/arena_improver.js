@@ -1159,7 +1159,6 @@
   }
 
   async function arenaChallenge (row, col){
-    arenaResult.scrollTop = 0;
     const options = {
       method: 'POST',
       headers: {
@@ -1173,7 +1172,11 @@
         throw new Error('/teamchallenge res.ng');
       }
       const text = await response.text();
+      arenaResult.style.display = 'block';
       arenaResult.innerText = text;
+      arenaResult.scrollTop = 0;
+      arenaResult.style.display = '';
+
       /*
       arenaResult.style.display = 'block';
       arenaResult.innerText = text;
