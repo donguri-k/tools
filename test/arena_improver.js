@@ -1291,6 +1291,7 @@
       timestamp.style.fontSize = '90%';
       timestamp.style.color = '#666';
       timestamp.style.borderRight = 'solid 0.5px #888';
+      timestamp.style.whiteSpace = 'nowrap';
 
       const regionDiv = document.createElement('div');
       regionDiv.innerText = `challenge: ${region}\n${next}`;
