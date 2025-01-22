@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <link rel="stylesheet" href="./css/main.css">
+    <link rel="stylesheet" href="./css/main.css?20250121">
     <link rel="icon" href="/tools/favicon.ico">
     <title>donguri Arena Assist Tool</title>
   </head>
@@ -15,7 +15,7 @@
       <h1>donguri Arena Assist Tool</h1>
       <div class="container">
         <div id="script">
-          <h2>▼Script v1.1a</h2>
+          <h2>▼Script v1.1b</h2>
           <h3>v0.9以前を使用している場合は再登録してください。</h3>
           <p>Userscript版</p>
           <a href="script/arena_assist_tool.js">https://donguri-k.github.io/tools/script/arena_assist_tool.js</a>
@@ -52,8 +52,7 @@
                   <p>[追加] 装備一覧を開き、各カテゴリの装備を選択し、名前を付けて登録。*武器と防具は必須</p>
                   <p>登録した装備を選択すると、登録した装備に付け替える（ネックレスが未登録の場合は武器と防具のみ付け替え）</p>
                   <p>*既に装備中のアイテムは再装備しない設計となっており、プリセット選択時に装備情報を記録している。
-                    そのため、別タブでアイテムバッグから装備を直接変更した場合、装備中のアイテムの情報が更新されず正しく装備できない場合がある。対処法はリロードで装備情報のリセット。
-                    特にネックレスは複数のプリセットで共通になることが多いため発生しやすい。
+                    何らかの理由で装備の切り替えに問題が生じた場合は装備情報のリセットを実行。
                   </p>
                 </li>
                 <li>
@@ -110,6 +109,11 @@
         <div id="update" style="font-size:13px">
           <h2>▼更新履歴</h2>
           <dl>
+            <dt>v1.1b - 2025/01/22</dt>
+            <dd>自動参加の停止処理を修正（clearTimeoutの処理）</dd>
+            <dd>自動参加のログを整形</dd>
+            <dd>アイテムバッグの装備変更を捕捉</dd>
+            <dd>対戦ログのスクロール位置の修正</dd>
             <dt>v1.1a - 2025/01/21</dt>
             <dd>一定時間ごとに自動参加する機能追加</dd>
             <dd>プリセットの装備処理実行中は他の装備を選択できないようにした</dd>
