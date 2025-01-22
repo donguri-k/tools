@@ -1,13 +1,37 @@
 // ==UserScript==
 // @name         donguri arena assist tool
-// @version      1.1a
+// @version      1.1b
 // @description  fix arena ui and add functions
 // @author       7234e634
 // @match        https://donguri.5ch.net/teambattle
+// @match        https://donguri.5ch.net/bag
 // ==/UserScript==
 
 
 (()=>{
+  if(location.href === 'https://donguri.5ch.net/bag') {
+    function saveCurrentEquip(url, index) {
+      let currentEquip = [];
+      if(localStorage.getItem('current_equip')){
+        currentEquip = JSON.parse(localStorage.getItem('current_equip'));
+      }    
+      const regex = /https:\/\/donguri\.5ch\.net\/equip\/(\d+)/;
+      const equipId = url.match(regex)[1];
+      currentEquip[index] = equipId;
+      localStorage.setItem('current_equip', JSON.stringify(currentEquip));
+    }
+    const tableIds = ['weaponTable', 'armorTable', 'necklaceTable'];
+    tableIds.forEach((elm, index)=>{
+      const equipLinks = document.querySelectorAll(`#${elm} a[href^="https://donguri.5ch.net/equip/"]`);
+      [...equipLinks].forEach(link => {
+        link.addEventListener('click', ()=>{
+          saveCurrentEquip(link.href, index);
+        })
+      })
+    })
+    return;
+  }
+
   const vw = Math.min(document.documentElement.clientWidth, window.innerWidth || 0);
 
   const header = document.querySelector('header');
@@ -330,7 +354,7 @@
       const link = document.createElement('a');
       link.style.color = '#666';
       link.style.textDecoration = 'underline';
-      link.textContent = 'arena assist tool - v1.1a';
+      link.textContent = 'arena assist tool - v1.1b';
       link.href = 'https://donguri-k.github.io/tools/arena-assist-tool';
       link.target = '_blank';
       const author = document.createElement('input');
@@ -353,18 +377,17 @@
     autoJoinButton.style.width = '100%';
     autoJoinButton.addEventListener('click',()=>{
       autoJoinDialog.showModal();
-      autoJoin();
     })
 
     const autoJoinDialog = document.createElement('dialog');
     autoJoinDialog.style.background = '#fff';
     autoJoinDialog.style.color = '#000';
     autoJoinDialog.style.width = '90vw';
-    autoJoinDialog.style.height = '95vh';
+    autoJoinDialog.style.height = '90vh';
     autoJoinDialog.style.fontSize = '80%';
     autoJoinDialog.style.textAlign = 'center';
     autoJoinDialog.classList.add('auto-join');
-    autoJoinDialog.addEventListener('show', (event) => {
+    autoJoinDialog.addEventListener('open', (event) => {
       event.preventDefault(); // 自動フォーカスを防ぐ?
     });
 
@@ -417,7 +440,7 @@
   panel.style.right = '0';
   panel.style.background = '#f0f0f0';
   panel.style.border = 'solid 1px #000';
-  panel.style.height = '100vh';
+  panel.style.height = '96vh';
   panel.style.width = '400px';
   panel.style.maxWidth = '75vw';
   panel.style.padding = '2px';
@@ -427,8 +450,6 @@
   panel.style.flexDirection = 'column';
 
   (()=>{
-    let currentEquip = [];
-
     const input = document.createElement('input');
     const button = document.createElement('button');
     // input.style.width = '100%';
@@ -455,6 +476,19 @@
     presetList.style.overflowY = 'auto';
     presetList.style.flexGrow = '1';
     showEquipPreset();
+
+    const resetCurrentEquip = document.createElement('div');
+    resetCurrentEquip.textContent = '装備情報をリセット';
+    resetCurrentEquip.style.borderTop = 'solid 1px #000';
+    resetCurrentEquip.style.cursor = 'pointer';
+    resetCurrentEquip.style.color = '#a62';
+    resetCurrentEquip.style.whiteSpace = 'nowrap';
+    resetCurrentEquip.style.overflow = 'hidden';
+    resetCurrentEquip.addEventListener('click', ()=>{
+      localStorage.removeItem('current_equip');
+      const stat = document.querySelector('.equip-preset-stat');
+      stat.textContent = '現在の装備情報を初期化';
+    })
 
     presetList.addEventListener('click', (event)=>{
       const presetLi = event.target.closest('li');
@@ -600,7 +634,7 @@
       panel.append(div);
     })();
   
-    panel.append(presetList);
+    panel.append(resetCurrentEquip, presetList);
     document.body.append(panel);
 
     // equip item table dialog
@@ -771,7 +805,6 @@
                 if(!event.target.closest('td')) return;
                 const target = event.target.closest('td');
                 const itemName = target.textContent;
-                //const rank = ranks.find(val => itemName.includes(`[${val}]`) || '');
                 const rank = itemName.match(/\[(.+?)\]/)[1];
                 const id = target.dataset.id;
                 selectedEquips.id[index] = id;
@@ -862,6 +895,10 @@
 
     }
     async function setPresetItems (presetName) {
+      let currentEquip = [];
+      if(localStorage.getItem('current_equip')){
+        currentEquip = JSON.parse(localStorage.getItem('current_equip'));
+      }
       const stat = document.querySelector('.equip-preset-stat');
       if (stat.textContent === '装備中...') return;
       const equipPresets = JSON.parse(localStorage.getItem('equipPresets'));
@@ -897,10 +934,10 @@
         }
       } catch (e) {
         stat.textContent = e;
-        currentEquip = [];
+        localStorage.removeItem('current_equip');
       } finally {
         stat.textContent = '完了: ' + presetName;
-        currentEquip = equipPresets[presetName].id;
+        localStorage.setItem('current_equip', JSON.stringify(equipPresets[presetName].id));
       }
     }
     function removePresetItems(presetName) {
@@ -1135,7 +1172,11 @@
         throw new Error('/teamchallenge res.ng');
       }
       const text = await response.text();
+      arenaResult.style.display = 'block';
       arenaResult.innerText = text;
+      arenaResult.scrollTop = 0;
+      arenaResult.style.display = '';
+
       /*
       arenaResult.style.display = 'block';
       arenaResult.innerText = text;
@@ -1217,6 +1258,8 @@
     cells.forEach(cell => grid.append(cell));
   }
 
+  let challengeTimeoutId;
+  let isAutoJoinRunning = false;
   function autoJoin() {
     const dialog = document.querySelector('.auto-join');
     const interval = () => {
@@ -1239,12 +1282,44 @@
       regions.push([i, i]);
     }
   
-    function logMessage(message) {
-      const timestamp = new Date().toLocaleString('sv-SE');
-      logArea.prepend(`[${timestamp}] `, message, document.createElement('br'));
+    function logMessage(region, next, message) {
+      const date = new Date();
+      const ymd = date.toLocaleDateString('sv-SE').slice(2);
+      const time = date.toLocaleTimeString('sv-SE');
+      const timestamp = document.createElement('div');
+      timestamp.innerText = `${ymd}\n${time}`;
+      timestamp.style.fontSize = '90%';
+      timestamp.style.color = '#666';
+      timestamp.style.borderRight = 'solid 0.5px #888';
+      timestamp.style.whiteSpace = 'nowrap';
+
+      const regionDiv = document.createElement('div');
+      regionDiv.innerText = `challenge: ${region}\n${next}`;
+      regionDiv.style.fontSize = '90%';
+      regionDiv.style.color = '#444';
+      regionDiv.style.borderRight = 'dotted 0.5px #888';
+      regionDiv.style.whiteSpace = 'nowrap';
+
+      const messageDiv = document.createElement('div');
+      messageDiv.textContent = message;
+
+      const div = document.createElement('div');
+      div.style.display = 'flex';
+      div.style.gap = '4px';
+      div.style.alignItems = 'center';
+      div.style.marginBottom = '-0.5px';
+      div.style.marginTop = '-0.5px';
+      div.style.border = 'solid 0.5px #888';
+
+      div.append(timestamp, regionDiv, messageDiv);
+      logArea.prepend(div);
     }
   
-    const errorMesssages = {
+    const messageType = {
+      success: [
+        'アリーナチャレンジは失敗しました。',
+        'リーダーになった'
+      ],
       retry: [
         'あなたのチームは動きを使い果たしました。しばらくお待ちください。',
         'ng<>too fast'
@@ -1254,14 +1329,13 @@
       ],
       quit: [
         '武器と防具を装備しなければなりません。',
+        '最初にチームに参加する必要があります。',
         'どんぐりが見つかりませんでした。'
       ]
     }
     function challenge(index = 0) {
       if(!dialog.open) return;
-      logMessage('challenge: ' + regions[index]);
       const body = `row=${regions[index][0]}&col=${regions[index][1]}`;
-      
       fetch('/teamchallenge', {
         method: 'POST',
         body: body,
@@ -1270,26 +1344,33 @@
         .then(response => response.ok ? response.text() : Promise.reject(`res.ng[${response.status}]`))
         .catch(error => logMessage(error))
         .then(text => {
+          const lastLine = text.trim().split('\n').pop();
+          let message = lastLine;
           let nextStep = [0, interval()];
-          if (text.startsWith('装備している')) {
+          if (lastLine.startsWith('装備している')) {
             // 装備している防具と武器が力不足です。
             // 装備している防具と武器が強すぎます
             // 装備しているものは改造が多すぎます。改造の少ない他のものをお試しください
             nextStep = [index + 1, 2];
-          } else if (errorMesssages.retry.some(v => text.includes(v))) {
-            nextStep = [index, 8];
-          } else if (errorMesssages.reset.some(v => text.includes(v))) { // 発生しない?
+          } else if (messageType.retry.some(v => lastLine.includes(v))) {
+            nextStep = [index, 4];
+          } else if (messageType.reset.some(v => lastLine.includes(v))) { // 発生しない?
             nextStep = [0, 2];
-          } else if (errorMesssages.quit.some(v => text.includes(v))) {
-            logMessage(text + '[停止]');
+          } else if (messageType.quit.some(v => lastLine.includes(v))) {
+            logMessage(regions[index], '', `[停止] ${lastLine}`);
             return;
+          } else {
+            message = '[成功] ' + lastLine;
           }
-          logMessage(text.slice(0, 80));
-          logMessage(`next(${nextStep[1]}sec): ${regions[nextStep[0]]}`);
-          setTimeout(() => challenge(nextStep[0]), 1000 * nextStep[1]);
+
+          logMessage(regions[index], `next(${nextStep[1]}s): ${regions[nextStep[0]]}`, message);
+          challengeTimeoutId = setTimeout(() => challenge(nextStep[0]), 1000 * nextStep[1]);
         });
     }
-    challenge();
+    if (!isAutoJoinRunning) {
+      isAutoJoinRunning = true;
+      challenge();
+    }
   };
   
   function drawProgressBar(){
@@ -1345,30 +1426,36 @@
   }
 
   drawProgressBar();
-  (()=>{
-    let intervalId;
-    function startInterval() {
-      if (!intervalId) {
-        intervalId = setInterval(() => {
-          drawProgressBar();
-        }, 18000);
+  (()=>{ // autoJoinとprogressBarのinterval管理
+    let progressBarIntervalId = setInterval(drawProgressBar, 18000);
+    function stopAutoJoin() {
+      if (challengeTimeoutId) {
+        clearTimeout(challengeTimeoutId);
+        challengeTimeoutId = null;
       }
+      isAutoJoinRunning = false;
     }
-    function stopInterval() {
-      if (intervalId) {
-        clearInterval(intervalId);
-        intervalId = null;
-      }
+    function startAutoJoin() {
+      clearInterval(progressBarIntervalId);
+      progressBarIntervalId = null;
+      autoJoin();
     }
     const dialog = document.querySelector('.auto-join');
     const observer = new MutationObserver(() => {
-      dialog.open ? stopInterval() : startInterval();
+      if (dialog.open) {
+        startAutoJoin();
+      } else {
+        stopAutoJoin();
+        drawProgressBar();
+        if (!progressBarIntervalId) {
+          progressBarIntervalId = setInterval(drawProgressBar, 18000);
+        }
+      }
     });
     
     observer.observe(dialog, {
       attributes: true, 
       attributeFilter: ['open']
     });
-    startInterval();
   })();
 })();
