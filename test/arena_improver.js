@@ -159,6 +159,7 @@
       autoJoinDialog.style.height = '90vh';
       autoJoinDialog.style.fontSize = '80%';
       autoJoinDialog.style.textAlign = 'center';
+      autoJoinDialog.style.marginTop = '2vh';
       autoJoinDialog.classList.add('auto-join');
       document.body.append(autoJoinDialog);
 
@@ -188,6 +189,7 @@
         label.append(intervalInput, '秒');
     
         const closeButton = button.cloneNode();
+        closeButton.style.fontSize = '100%';
         closeButton.textContent = '自動参加モードを終了';
         closeButton.addEventListener('click', ()=>{
           autoJoinDialog.close();
