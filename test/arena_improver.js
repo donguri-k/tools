@@ -93,6 +93,8 @@
       subButton.style.fontSize = '65%';
       subButton.style.width = '6em';
       subButton.style.border = 'none';
+      subButton.style.padding = '2px';
+
 
       const div = document.createElement('div');
       div.style.display = 'flex';
@@ -244,12 +246,10 @@
         });
       })
 
-
       const closeSlideMenuButton = subButton.cloneNode();
-      closeSlideMenuButton.textContent = 'キャンセル';
+      closeSlideMenuButton.textContent = '閉じる';
       closeSlideMenuButton.style.background = '#888';
       closeSlideMenuButton.style.color = '#fff';
-      closeSlideMenuButton.style.padding = '0';
       closeSlideMenuButton.addEventListener('click', ()=>{
         slideMenu.style.transform = 'translateX(0)';
         cellSelectorActivate = false;
