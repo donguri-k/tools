@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         donguri arena assist tool
-// @version      1.1b
+// @version      1.1c
 // @description  fix arena ui and add functions
 // @author       7234e634
 // @match        https://donguri.5ch.net/teambattle
@@ -11,10 +11,7 @@
 (()=>{
   if(location.href === 'https://donguri.5ch.net/bag') {
     function saveCurrentEquip(url, index) {
-      let currentEquip = [];
-      if(localStorage.getItem('current_equip')){
-        currentEquip = JSON.parse(localStorage.getItem('current_equip'));
-      }    
+      let currentEquip = JSON.parse(localStorage.getItem('current_equip')) || [];
       const regex = /https:\/\/donguri\.5ch\.net\/equip\/(\d+)/;
       const equipId = url.match(regex)[1];
       currentEquip[index] = equipId;
@@ -35,6 +32,7 @@
   const vw = Math.min(document.documentElement.clientWidth, window.innerWidth || 0);
 
   const header = document.querySelector('header');
+  header.style.marginTop = '100px';
   const toolbar = document.createElement('div');
   toolbar.style.position = 'fixed';
   toolbar.style.top = '0';
@@ -48,6 +46,7 @@
   toolbar.append(progressBarContainer);
 
   // add buttons and select to custom menu
+  let shouldSkipAreaInfo, cellSelectorActivate, rangeAttackProcessing;
   (()=>{
     const button = document.createElement('button');
     button.type = 'button';
@@ -63,65 +62,211 @@
     }
 
     const menuButton = button.cloneNode();
-    menuButton.textContent = '■メニュー';
+    menuButton.textContent = '▼メニュー';
     menuButton.addEventListener('click', ()=>{
-      menuDialog.show();
+      const isSubMenuOpen = subMenu.style.display === 'flex';
+      subMenu.style.display = isSubMenuOpen ? 'none' : 'flex';
     })
+
+    const subMenu = document.createElement('div');
+    subMenu.style.display = 'none';
+    subMenu.style.flexWrap = 'nowrap';
+    subMenu.style.overflowX = 'hidden';
+    subMenu.style.position = 'relative';
   
     const equipButton = button.cloneNode();
     equipButton.textContent = '■装備';
     equipButton.addEventListener('click', ()=>{
       panel.style.display = 'flex';
     });
-  
-    const sortButton = button.cloneNode();
-    sortButton.textContent = '▼ソート';
-    sortButton.addEventListener('click', ()=>{
-      sortMenu.style.display = 'flex';
-    });
 
     const cellButton = button.cloneNode();
     cellButton.textContent = '詳細取得/更新';
-    cellButton.addEventListener('click',getArenaInfo);
+    cellButton.addEventListener('click',fetchArenaInfo);
   
     const refreshButton = button.cloneNode();
     refreshButton.textContent = '陣地更新';
     refreshButton.addEventListener('click',refreshAreaInfo);
+
+    (()=>{
+      const subButton = button.cloneNode();
+      subButton.style.fontSize = '65%';
+      subButton.style.width = '6em';
+      subButton.style.border = 'none';
+
+      const div = document.createElement('div');
+      div.style.display = 'flex';
+      div.style.flex = '1';
+      div.style.justifyContent = 'center';
+      div.style.gap = '2px';
+      div.style.overflowX = 'auto';
+      div.style.height = '100%';
+
+
+      const slideMenu = document.createElement('div');
+      slideMenu.style.display = 'flex';
+      slideMenu.style.flex = '1';
+      slideMenu.style.justifyContent = 'center';
+      slideMenu.style.gap = '2px';
+      slideMenu.style.position = 'absolute';
+      slideMenu.style.width = '100%';
+      slideMenu.style.height = '100%';
+      slideMenu.style.right = '-100%';
+      slideMenu.style.background = '#fff';
+      slideMenu.style.transition = 'transform 0.1s ease';
+
+      const skipAreaInfoButton = subButton.cloneNode();
+      skipAreaInfoButton.innerText = 'セル情報\nスキップ';
+      skipAreaInfoButton.style.background = '#888';
+      skipAreaInfoButton.style.color = '#fff';
+      skipAreaInfoButton.addEventListener('click', ()=>{
+        if(shouldSkipAreaInfo) {
+          skipAreaInfoButton.style.background = '#888';
+          shouldSkipAreaInfo = false;
+        } else {
+          skipAreaInfoButton.style.background = '#46f';
+          shouldSkipAreaInfo = true;
+        }
+      })
+
+      let currnetSort = 'default';
+      const sortButton = subButton.cloneNode();
+      sortButton.innerText = 'ソート\n切り替え';
+      sortButton.style.background = '#ffb300';
+      sortButton.style.color = '#000';
+      sortButton.addEventListener('click', ()=>{
+        if(currnetSort === 'default') {
+          sortCells('cond');
+          currnetSort = 'cond';
+        } else {
+          sortCells('default');
+          currnetSort = 'default';
+        }
+      })
+      
+      const autoJoinButton = subButton.cloneNode();
+      autoJoinButton.innerText = '自動参加\nモード';
+      autoJoinButton.style.background = '#ffb300';
+      autoJoinButton.style.color = '#000';
+      autoJoinButton.addEventListener('click',()=>{
+        autoJoinDialog.showModal();
+      })
+
+      const autoJoinDialog = document.createElement('dialog');
+      autoJoinDialog.style.background = '#fff';
+      autoJoinDialog.style.color = '#000';
+      autoJoinDialog.style.width = '90vw';
+      autoJoinDialog.style.height = '90vh';
+      autoJoinDialog.style.fontSize = '80%';
+      autoJoinDialog.style.textAlign = 'center';
+      autoJoinDialog.classList.add('auto-join');
+      document.body.append(autoJoinDialog);
+
+      //autoJoin
+      (()=>{
+        const container = document.createElement('div');
+        container.style.display = 'flex';
+        container.style.flexDirection = 'column';
+        container.style.height = '100%';
+        container.style.color = '#000';
+  
+        const log = document.createElement('div');
+        log.style.margin = '2px';
+        log.style.border = 'solid 1px #000';
+        log.style.overflow = 'auto';
+        log.style.flexGrow = '1';
+        log.style.textAlign = 'left';
+        log.classList.add('auto-join-log');
+  
+        const label = document.createElement('label');
+        const intervalInput = document.createElement('input');
+        intervalInput.type = 'number';
+        intervalInput.placeholder = '600';
+        intervalInput.style.width = '64px';
+        intervalInput.style.background = '#fff';
+        intervalInput.style.color = '#000';
+        label.append(intervalInput, '秒');
+    
+        const closeButton = button.cloneNode();
+        closeButton.textContent = '自動参加モードを終了';
+        closeButton.addEventListener('click', ()=>{
+          autoJoinDialog.close();
+        })
+        closeButton.autofocus = true;
+        const p = document.createElement('p');
+        p.textContent = 'この画面を開いたままにしておくこと。最短600秒';
+        p.style.margin = '0';
+  
+        container.append(log, label, p, closeButton);
+        autoJoinDialog.append(container);
+      })();
+
+      const settingsButton = subButton.cloneNode();
+      settingsButton.textContent = '設定(まだ)';
+      settingsButton.style.background = '#ffb300';
+      settingsButton.style.color = '#000';
+      settingsButton.addEventListener('click', ()=>{
+        settingsDialog.show();
+      })
+
+      const rangeAttackButton = subButton.cloneNode();
+      rangeAttackButton.textContent = '範囲攻撃';
+      rangeAttackButton.style.background = '#f64';
+      rangeAttackButton.style.color = '#fff';
+      rangeAttackButton.addEventListener('click', ()=>{
+        slideMenu.style.transform = 'translateX(-100%)';
+        cellSelectorActivate = true;
+      })
+      
+      const attackStartButton = subButton.cloneNode();
+      attackStartButton.textContent = '攻撃開始';
+      attackStartButton.style.background = '#f64';
+      attackStartButton.style.color = '#fff';
+      attackStartButton.addEventListener('click', async()=>{
+        attackStartButton.disabled = true;
+        rangeAttackProcessing = true;
+        await rangeAttack();
+        attackStartButton.disabled = false;
+        rangeAttackProcessing = false;
+      })
+
+      const deselectButton = subButton.cloneNode();
+      deselectButton.textContent = '選択解除';
+      deselectButton.style.background = '#888';
+      deselectButton.style.color = '#fff';
+      deselectButton.addEventListener('click', ()=>{
+        const cells = document.querySelectorAll('.cell');
+        cells.forEach(cell => {
+          cell.classList.remove('selected');
+          cell.style.borderColor = '#ccc';
+        });
+      })
+
+
+      const closeSlideMenuButton = subButton.cloneNode();
+      closeSlideMenuButton.textContent = 'キャンセル';
+      closeSlideMenuButton.style.background = '#888';
+      closeSlideMenuButton.style.color = '#fff';
+      closeSlideMenuButton.style.padding = '0';
+      closeSlideMenuButton.addEventListener('click', ()=>{
+        slideMenu.style.transform = 'translateX(0)';
+        cellSelectorActivate = false;
+      })
+
+      div.append(skipAreaInfoButton, rangeAttackButton, sortButton, autoJoinButton, settingsButton);
+      slideMenu.append(attackStartButton, deselectButton, closeSlideMenuButton);
+      subMenu.append(div, slideMenu);
+
+    })();
 
     const main = document.createElement('div');
     main.style.display = 'flex';
     main.style.flexWrap = 'nowrap';
     main.style.gap = '2px';
     main.style.justifyContent = 'center';
-    main.append(menuButton, equipButton, sortButton, refreshButton, cellButton);
+    main.append(menuButton, equipButton, refreshButton, cellButton);
 
-    
-    const defaultSort = button.cloneNode();
-    const condSort = button.cloneNode();
-    defaultSort.textContent = 'デフォルト順';
-    condSort.textContent = '装備制限順';
-    defaultSort.addEventListener('click', ()=>{
-      sortCells('default');
-      sortMenu.style.display = 'none';
-    })
-    condSort.addEventListener('click', ()=>{
-      sortCells('cond');
-      sortMenu.style.display = 'none';
-    })
-
-    const sortMenu = document.createElement('div');
-    sortMenu.style.display = 'none';
-    sortMenu.style.flexWrap = 'nowrap';
-    sortMenu.style.gap = '2px';
-    sortMenu.style.justifyContent = 'center';
-    sortMenu.append(defaultSort, condSort);
-
-    toolbar.append(main, sortMenu);
-    toolbar.addEventListener('mousedown', (event)=>{
-      if (!sortMenu.contains(event.target)) {
-        sortMenu.style.display = 'none';
-      }
-    })
+    toolbar.append(main, subMenu);
   })();
 
   const arenaField = document.createElement('dialog');
@@ -166,17 +311,17 @@
     reinforceButton.addEventListener('click', ()=>{
       arenaModDialog.dataset.action = 'ReinforceArena';
       modButton.textContent = '強化する';
-      p.textContent = `木材: ${wood}, 鉄: ${steel}; 1ptにつき各25個`;
+      p.textContent = `木材: ${wood}, 鉄: ${steel} (1ptにつき各25個)`;
       arenaModDialog.show();
     })
 
     const siegeButton = button.cloneNode();
-    siegeButton.textContent = '弱体化する';
+    siegeButton.textContent = '弱体化';
     siegeButton.style.flexGrow = '1';
     siegeButton.addEventListener('click', ()=>{
       arenaModDialog.dataset.action = 'SiegeArena';
-      modButton.textContent = '弱体化する';
-      p.textContent = `木材: ${wood}, 鉄: ${steel}; 1ptにつき各25個`;
+      modButton.textContent = '弱体化';
+      p.textContent = `木材: ${wood}, 鉄: ${steel} (1ptにつき各25個)`;
       arenaModDialog.show();
     })
 
@@ -270,7 +415,8 @@
   arenaResult.style.width = '60%';
   arenaResult.style.bottom = '4vh';
   arenaResult.style.left = 'auto';
-  arenaResult.style.height = '70vh';
+  arenaResult.style.height = '60vh';
+  arenaResult.style.maxWidth = '480px';
   arenaResult.style.maxHeight = '640px';
   arenaResult.style.background = '#fff';
   arenaResult.style.color = '#000';
@@ -279,21 +425,22 @@
   arenaResult.style.margin = '0';
   arenaResult.style.textAlign = 'left';
   arenaResult.style.overflowY = 'auto';
+  arenaResult.style.zIndex = '1';
   window.addEventListener('mousedown', (event) => {
-    if (!arenaResult.contains(event.target)) {
+    if (!arenaResult.contains(event.target) && !rangeAttackProcessing) {
       arenaResult.close();
     }
     if (!arenaModDialog.contains(event.target)) {
       arenaModDialog.close();
     }
-    if (!menuDialog.contains(event.target)) {
-      menuDialog.close();
+    if (!settingsDialog.contains(event.target)) {
+      settingsDialog.close();
     }
     if (!panel.contains(event.target)) {
       panel.style.display = 'none';
     }
   });
-  arenaField.append(arenaResult);
+  document.body.append(arenaResult);
   document.body.append(arenaField);
   
   const grid = document.querySelector('.grid');
@@ -305,20 +452,20 @@
   table.parentNode.style.overflow = 'auto';
   table.parentNode.style.height = '60vh';
 
-  //-- メニュー --//
-  const menuDialog = document.createElement('dialog');
-  menuDialog.style.position = 'fixed';
-  menuDialog.style.top = '0';
-  menuDialog.style.left = 'auto';
-  menuDialog.style.background = '#f0f0f0';
-  menuDialog.style.border = 'solid 1px #000';
-  menuDialog.style.height = '96vh';
-  menuDialog.style.width = '400px';
-  menuDialog.style.maxWidth = '75vw';
-  menuDialog.style.padding = '2px';
-  menuDialog.style.margin = '0';
-  menuDialog.style.zIndex = '2';
-  menuDialog.style.textAlign = 'left';
+  //-- settings --//
+  const settingsDialog = document.createElement('dialog');
+  settingsDialog.style.position = 'fixed';
+  settingsDialog.style.top = '0';
+  settingsDialog.style.left = 'auto';
+  settingsDialog.style.background = '#f0f0f0';
+  settingsDialog.style.border = 'solid 1px #000';
+  settingsDialog.style.height = '96vh';
+  settingsDialog.style.width = '400px';
+  settingsDialog.style.maxWidth = '75vw';
+  settingsDialog.style.padding = '2px';
+  settingsDialog.style.margin = '0';
+  settingsDialog.style.zIndex = '2';
+  settingsDialog.style.textAlign = 'left';
   (()=>{
     const button = document.createElement('button');
     button.type = 'button';
@@ -354,7 +501,7 @@
       const link = document.createElement('a');
       link.style.color = '#666';
       link.style.textDecoration = 'underline';
-      link.textContent = 'arena assist tool - v1.1b';
+      link.textContent = 'arena assist tool - v1.1c';
       link.href = 'https://donguri-k.github.io/tools/arena-assist-tool';
       link.target = '_blank';
       const author = document.createElement('input');
@@ -371,67 +518,12 @@
       })
       footer.append(link, author);
     })();
-    
-    const autoJoinButton = button.cloneNode();
-    autoJoinButton.textContent = '自動参加モード';
-    autoJoinButton.style.width = '100%';
-    autoJoinButton.addEventListener('click',()=>{
-      autoJoinDialog.showModal();
-    })
 
-    const autoJoinDialog = document.createElement('dialog');
-    autoJoinDialog.style.background = '#fff';
-    autoJoinDialog.style.color = '#000';
-    autoJoinDialog.style.width = '90vw';
-    autoJoinDialog.style.height = '90vh';
-    autoJoinDialog.style.fontSize = '80%';
-    autoJoinDialog.style.textAlign = 'center';
-    autoJoinDialog.classList.add('auto-join');
-    autoJoinDialog.addEventListener('open', (event) => {
-      event.preventDefault(); // 自動フォーカスを防ぐ?
-    });
-
-    (()=>{
-      const container = document.createElement('div');
-      container.style.display = 'flex';
-      container.style.flexDirection = 'column';
-      container.style.height = '100%';
-      container.style.color = '#000';
-
-      const log = document.createElement('div');
-      log.style.margin = '2px';
-      log.style.border = 'solid 1px #000';
-      log.style.overflow = 'auto';
-      log.style.flexGrow = '1';
-      log.style.textAlign = 'left';
-      log.classList.add('auto-join-log');
-
-      const label = document.createElement('label');
-      const autoJoinInterval = document.createElement('input');
-      autoJoinInterval.type = 'number';
-      autoJoinInterval.placeholder = '600';
-      autoJoinInterval.style.width = '64px';
-      autoJoinInterval.style.background = '#fff';
-      autoJoinInterval.style.color = '#000';
-      label.append(autoJoinInterval, '秒');
-  
-      const closeButton = button.cloneNode();
-      closeButton.textContent = '自動参加モードを終了';
-      closeButton.addEventListener('click', ()=>{
-        autoJoinDialog.close();
-      })
-      const p = document.createElement('p');
-      p.textContent = 'この画面を開いたままにしておくこと。最短600秒';
-      p.style.margin = '0';
-
-      container.append(log, label, p, closeButton);
-      autoJoinDialog.append(container);
-    })();
-    container.append(h2, autoJoinButton, settingsMenu, footer)
-    menuDialog.append(container, autoJoinDialog);
+    container.append(h2, settingsMenu, footer)
+    settingsDialog.append(container);
   })();
   
-  document.body.append(menuDialog);
+  document.body.append(settingsDialog);
 
   //-- 装備 --//
   const panel = document.createElement('div');
@@ -837,19 +929,13 @@
       })
     }
     function saveEquipPreset(name, obj){
-      let equipPresets = {};
-      if(localStorage.hasOwnProperty('equipPresets')){
-        equipPresets = JSON.parse(localStorage.getItem('equipPresets'));
-      }
+      let equipPresets = JSON.parse(localStorage.getItem('equipPresets')) || {};
       equipPresets[name] = obj;
       localStorage.setItem('equipPresets', JSON.stringify(equipPresets));
       showEquipPreset();
     }
     function showEquipPreset(){
-      let equipPresets = {};
-      if(localStorage.getItem('equipPresets')){
-        equipPresets = JSON.parse(localStorage.getItem('equipPresets'));
-      }
+      let equipPresets = JSON.parse(localStorage.getItem('equipPresets')) || {};
       const liTemplate = document.createElement('li');
       liTemplate.style.display = 'flex';
       liTemplate.style.justifyContent = 'space-between';
@@ -895,13 +981,10 @@
 
     }
     async function setPresetItems (presetName) {
-      let currentEquip = [];
-      if(localStorage.getItem('current_equip')){
-        currentEquip = JSON.parse(localStorage.getItem('current_equip'));
-      }
+      let currentEquip = JSON.parse(localStorage.getItem('current_equip')) || [];
       const stat = document.querySelector('.equip-preset-stat');
       if (stat.textContent === '装備中...') return;
-      const equipPresets = JSON.parse(localStorage.getItem('equipPresets'));
+      const equipPresets = JSON.parse(localStorage.getItem('equipPresets')) || [];
       const fetchPromises = equipPresets[presetName].id
         .filter(id => id !== undefined && id !== null && !currentEquip.includes(id)) // 未登録or既に装備中の部位は除外
         .map(id => fetch('https://donguri.5ch.net/equip/' + id));
@@ -935,16 +1018,15 @@
       } catch (e) {
         stat.textContent = e;
         localStorage.removeItem('current_equip');
-      } finally {
-        stat.textContent = '完了: ' + presetName;
-        localStorage.setItem('current_equip', JSON.stringify(equipPresets[presetName].id));
-      }
+      } 
+      stat.textContent = '完了: ' + presetName;
+      localStorage.setItem('current_equip', JSON.stringify(equipPresets[presetName].id));
     }
     function removePresetItems(presetName) {
       const userConfirmed = confirm(presetName + ' を削除しますか？');
       if(!userConfirmed) return;
       const stat = document.querySelector('.equip-preset-stat');
-      const equipPresets = JSON.parse(localStorage.getItem('equipPresets'));
+      const equipPresets = JSON.parse(localStorage.getItem('equipPresets')) || [];
       if(!equipPresets || !equipPresets[presetName]) {
         stat.textContent = '';
         return;
@@ -1034,7 +1116,7 @@
       })
     }).catch(e=>console.error(e))
   }
-  async function getArenaInfo(){
+  async function fetchArenaInfo(){
     refreshAreaInfo();
     grid.style.gridTemplateRows = grid.style.gridTemplateRows.replace('35px','65px');
     grid.style.gridTemplateColumns = grid.style.gridTemplateColumns.replace('35px','105px');
@@ -1073,17 +1155,7 @@
         cell.style.height = '60px';
         cell.style.borderWidth = '3px';
         cell.addEventListener('click', ()=>{
-          fetch(url)
-          .then(res => res.ok?res.text():Promise.reject('res.ng'))
-          .then(text => {
-            const doc = new DOMParser().parseFromString(text,'text/html');
-            const h1 = doc?.querySelector('h1')?.textContent;
-            if(h1 !== 'どんぐりチーム戦い') return Promise.reject(`title.ng`);
-            const table = doc.querySelector('table');
-            if(!table) return Promise.reject(`table.ng`);
-            showArenaTable(table);
-          })
-          arenaField.show();
+          handleCellClick (cell);
         });
         elm.replaceWith(cell);
       })
@@ -1102,60 +1174,86 @@
       const cell = elm.cloneNode();
       elm.replaceWith(cell);
       cell.addEventListener('click', ()=>{
-        let row = elm.dataset.row,
-        col = elm.dataset.col,
-        url = `https://donguri.5ch.net/teambattle?r=${row}&c=${col}`;  
-        fetch(url)
-        .then(res => res.ok?res.text():Promise.reject('res.ng'))
-        .then(text => {
-          const doc = new DOMParser().parseFromString(text,'text/html');
-          const h1 = doc?.querySelector('h1')?.textContent;
-          if(h1 !== 'どんぐりチーム戦い') return Promise.reject(`title.ng`);
-          const table = doc.querySelector('table');
-          if(!table) return Promise.reject(`table.ng`);
-          showArenaTable(table);
-        })
-        arenaField.show();
-      });
+        handleCellClick(cell);
+      })
     })
   })();
 
-  function showArenaTable(table){
-    const row = table.querySelector('tbody > tr');
-    if(!row) return;
-    const coordinate = row.cells[0].textContent.replace('アリーナ','').trim();
-    const holderName = row.cells[1].querySelector('strong');
-    const equipCond = row.cells[1].querySelector('small');
-    const teamName = row.cells[2].textContent;
-    const statistics = row.cells[3].textContent.match(/\d+/g);
-    const modCounts = row.cells[4].textContent.match(/\d+/g);
-    const modders = row.cells[5].textContent;
-
-    const newTable = document.createElement('table');
-    const tbody = document.createElement('tbody');
-    const tr = tbody.insertRow(0);
-
-    const cell = document.createElement('td');
-    cell.style.textAlign = 'center';
-    const cells = [];
-    for(let i=0; i<4; i++){
-      cells.push(cell.cloneNode());
-      tr.append(cells[i]);
+  async function fetchArenaTable(row, col){
+    const url = `https://donguri.5ch.net/teambattle?r=${row}&c=${col}`; 
+    try {
+      const res = await fetch(url);
+      if(!res.ok) throw new Error('res.ng');
+      const text = await res.text();
+      const doc = new DOMParser().parseFromString(text,'text/html');
+      const h1 = doc?.querySelector('h1')?.textContent;
+      if(h1 !== 'どんぐりチーム戦い') return Promise.reject(`title.ng`);
+      const table = doc.querySelector('table');
+      if(!table) throw new Error('table.ng');
+      showArenaTable(table);
+    } catch (e) {
+      console.error(e);
     }
-    cells[0].append(coordinate, document.createElement('hr'), equipCond);
-    cells[1].append(holderName, document.createElement('br'), `${teamName}`);
-    cells[2].innerText = `勝:${statistics[0]}\n負:${statistics[1]}\n引:${statistics[2]}`;
-    cells[3].innerText = `強化:${modCounts[0]}\n弱体:${modCounts[1]}\n${modders}人`;
-    cells[3].style.whiteSpace = 'nowrap';
+    
+    function showArenaTable (table){
+      const tableRow = table.querySelector('tbody > tr');
+      if(!tableRow) return;
+      const coordinate = tableRow.cells[0].textContent.replace('アリーナ','').trim();
+      const holderName = tableRow.cells[1].querySelector('strong');
+      const equipCond = tableRow.cells[1].querySelector('small');
+      const teamName = tableRow.cells[2].textContent;
+      const statistics = tableRow.cells[3].textContent.match(/\d+/g);
+      const modCounts = tableRow.cells[4].textContent.match(/\d+/g);
+      const modders = tableRow.cells[5].textContent;
 
-    const [dataRow, dataCol] = coordinate.match(/\d+/g);
-    newTable.dataset.row = dataRow;
-    newTable.dataset.col = dataCol;
-    newTable.style.background = '#fff';
-    newTable.style.color = '#000';
-    newTable.style.margin = '0';
-    newTable.append(tbody);
-    arenaField.querySelector('table').replaceWith(newTable);
+      const newTable = document.createElement('table');
+      const tbody = document.createElement('tbody');
+      const tr = tbody.insertRow(0);
+
+      const cell = document.createElement('td');
+      cell.style.textAlign = 'center';
+      const cells = [];
+      for(let i=0; i<4; i++){
+        cells.push(cell.cloneNode());
+        tr.append(cells[i]);
+      }
+      cells[0].append(coordinate, document.createElement('hr'), equipCond);
+      cells[1].append(holderName, document.createElement('br'), `${teamName}`);
+      cells[2].innerText = `勝:${statistics[0]}\n負:${statistics[1]}\n引:${statistics[2]}`;
+      cells[3].innerText = `強化:${modCounts[0]}\n弱体:${modCounts[1]}\n${modders}人`;
+      cells[3].style.whiteSpace = 'nowrap';
+
+      const [dataRow, dataCol] = coordinate.match(/\d+/g);
+      newTable.dataset.row = dataRow;
+      newTable.dataset.col = dataCol;
+      newTable.style.background = '#fff';
+      newTable.style.color = '#000';
+      newTable.style.margin = '0';
+      newTable.append(tbody);
+      arenaField.querySelector('table').replaceWith(newTable);
+      arenaField.show();
+    }
+  }
+
+  function handleCellClick (cell){
+    if (cellSelectorActivate) {
+      if (cell.classList.contains('selected')) {
+        cell.style.borderColor = '#ccc';
+        cell.classList.remove('selected');
+      } else {
+        cell.style.borderColor = '#f64';
+        cell.classList.add('selected');
+      }
+    } else if (shouldSkipAreaInfo) {
+      const row = cell.dataset.row;
+      const col = cell.dataset.col;
+      if (arenaField.open) fetchArenaTable(row, col);
+      arenaChallenge(row, col);
+    } else {
+      const row = cell.dataset.row;
+      const col = cell.dataset.col;
+      fetchArenaTable(row, col);
+    }
   }
 
   async function arenaChallenge (row, col){
@@ -1198,8 +1296,72 @@
       arenaResult.innerText = e;
       arenaResult.show();
     }
-
   }
+
+  async function rangeAttack () {
+    const selectedCells = document.querySelectorAll('.cell.selected');
+    if(selectedCells.length === 0) {
+      alert('セルを選択してください');
+      return;
+    }
+
+    const pTemplate = document.createElement('p');
+    pTemplate.style.padding = '0';
+    pTemplate.style.margin = '0';
+
+    let errorOccurred = false;
+    arenaResult.textContent = '';
+    arenaResult.show();
+
+    for(const [i, cell] of selectedCells.entries()) {
+      const row = cell.dataset.row;
+      const col = cell.dataset.col;
+      const options = {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: `row=${row}&col=${col}`
+      };
+
+      try {
+        const response = await fetch('/teamchallenge', options);
+        const text = await response.text();
+        let lastLine = text.trim().split('\n').pop();
+        if(
+          lastLine.startsWith('<html') ||
+          lastLine === 'どんぐりが見つかりませんでした。'
+        ) {
+          throw new Error('どんぐりが見つかりませんでした。');
+        }
+        if(
+          lastLine === 'あなたのチームは動きを使い果たしました。しばらくお待ちください。' ||
+          lastLine === 'ng<>too fast'
+        ) {
+          throw new Error(lastLine);
+        }
+
+        const p = pTemplate.cloneNode();
+        p.textContent = `(${row}, ${col}) ${lastLine}`;
+        arenaResult.prepend(p);
+      } catch (e) {
+        const p = pTemplate.cloneNode();
+        p.textContent = `(${row}, ${col}) [中止] ${e}`;
+        arenaResult.prepend(p);
+        errorOccurred = true;
+        break;
+      }
+      if (i !== selectedCells.length-1) {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+    }
+    if(!errorOccurred) {
+      const p = pTemplate.cloneNode();
+      p.textContent = `完了`;
+      arenaResult.prepend(p);
+    }
+  }
+
   function sortCells(type){
     const cells = [...document.querySelectorAll('.cell')];
     if(type === 'default') {
@@ -1342,7 +1504,7 @@
         headers: headers
       })
         .then(response => response.ok ? response.text() : Promise.reject(`res.ng[${response.status}]`))
-        .catch(error => logMessage(error))
+        .catch(error => logMessage(regions[index], '', `Error: ${error}`))
         .then(text => {
           const lastLine = text.trim().split('\n').pop();
           let message = lastLine;
@@ -1353,14 +1515,17 @@
             // 装備しているものは改造が多すぎます。改造の少ない他のものをお試しください
             nextStep = [index + 1, 2];
           } else if (messageType.retry.some(v => lastLine.includes(v))) {
-            nextStep = [index, 4];
+            nextStep = [index, 20];
           } else if (messageType.reset.some(v => lastLine.includes(v))) { // 発生しない?
             nextStep = [0, 2];
           } else if (messageType.quit.some(v => lastLine.includes(v))) {
             logMessage(regions[index], '', `[停止] ${lastLine}`);
             return;
-          } else {
+          } else if (text.startsWith('アリーナチャレンジ開始')){
             message = '[成功] ' + lastLine;
+          } else if (text.startsWith('<html')){
+            message = 'どんぐりシステム';
+            nextStep = [index, 2];
           }
 
           logMessage(regions[index], `next(${nextStep[1]}s): ${regions[nextStep[0]]}`, message);
