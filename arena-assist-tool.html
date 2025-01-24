@@ -15,7 +15,7 @@
       <h1>donguri Arena Assist Tool</h1>
       <div class="container">
         <div id="script">
-          <h2>▼Script v1.1b</h2>
+          <h2>▼Script v1.1c</h2>
           <h3>v0.9以前を使用している場合は再登録してください。</h3>
           <p>Userscript版</p>
           <a href="script/arena_assist_tool.js">https://donguri-k.github.io/tools/script/arena_assist_tool.js</a>
@@ -64,6 +64,8 @@
             </li>
             <li>表示の問題をいくつか改善。具体的には、画面外にはみ出る問題を解消、画面幅に合わせた縮小表示、スマートフォンのみ一行あたり最大8マスまでに変更。</li>
             <li>アリーナをページ内で開き、対戦ログも表示するようにした。</li>
+            <li>セルをクリックで直接アリーナに挑戦するオプションを追加。エリア情報を開いた状態だと、情報取得も同時に行う。閉じた状態なら対戦のみ。</li>
+            <li>セルを複数選択して連続で挑戦するモードを追加。[範囲攻撃]モードでセルをクリックすると赤枠になり、選択された状態になる。攻撃開始で対象のセルを2秒毎に攻撃。弾切れとtoo fast及びどんぐりが見つからない場合は中止。</li>
             <li style="list-style: none;">
               <ul style="padding:0">
                 <li>
@@ -109,6 +111,13 @@
         <div id="update" style="font-size:13px">
           <h2>▼更新履歴</h2>
           <dl>
+            <dt>v1.1c - 2025/01/24</dt>
+            <dd>メニューのUI変更</dd>
+            <dd>アリーナの情報取得をスキップして対戦するモードを追加</dd>
+            <dd>セルを複数選択してまとめて挑戦するモードを追加</dd>
+            <dd>自動参加の弾切れとtoo fastの際のリトライを4sから20sに変更</dd>
+            <dd>自動参加のダイアログを開いた時の入力欄へのフォーカスを阻止</dd>
+            <dd>自動参加のエラー処理を修正</dd>
             <dt>v1.1b - 2025/01/22</dt>
             <dd>自動参加の停止処理を修正（clearTimeoutの処理）</dd>
             <dd>自動参加のログを整形</dd>
