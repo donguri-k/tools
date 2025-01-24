@@ -57,7 +57,7 @@
     button.style.boxSizing = 'border-box';
 
     if (vw < 768) {
-      button.style.fontSize = '60%';
+      button.style.fontSize = '70%';
       progressBarContainer.style.fontSize = '60%';
     }
 
