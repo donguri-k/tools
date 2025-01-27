@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         donguri arena assist tool
-// @version      1.1d_test1
+// @version      1.1d
 // @description  fix arena ui and add functions
 // @author       7234e634
 // @match        https://donguri.5ch.net/teambattle
@@ -79,8 +79,6 @@
     let currnetSort = 'default';
     const sortButton = button.cloneNode();
     sortButton.innerText = 'ソート\n切り替え';
-    sortButton.style.background = '#ffb300';
-    sortButton.style.color = '#000';
     sortButton.addEventListener('click', ()=>{
       if(currnetSort === 'default') {
         sortCells('cond');
@@ -92,12 +90,16 @@
     })
 
     const cellButton = button.cloneNode();
-    cellButton.innerText = '詳細更新';
-    cellButton.addEventListener('click',fetchArenaInfo);
+    cellButton.innerText = 'エリア情報\n再取得';
+    cellButton.addEventListener('click',()=>{
+      fetchArenaInfo(true);
+    });
   
     const refreshButton = button.cloneNode();
-    refreshButton.innerText = '陣地更新';
-    refreshButton.addEventListener('click',refreshAreaInfo);
+    refreshButton.innerText = 'エリア情報\n更新';
+    refreshButton.addEventListener('click',()=>{
+      fetchArenaInfo(false);
+    });
 
     const subMenu = document.createElement('div');
     subMenu.style.display = 'none';
@@ -192,7 +194,7 @@
         intervalInput.style.color = '#000';
         label.append(intervalInput, '秒');
     
-        const closeButton = button.cloneNode();
+        const closeButton = document.createElement('button');
         closeButton.style.fontSize = '100%';
         closeButton.textContent = '自動参加モードを終了';
         closeButton.addEventListener('click', ()=>{
@@ -357,7 +359,7 @@
         closeButton.addEventListener('click', ()=>{
           batchSelectMenu.style.display = 'none';
         })
-        batchSelectMenu.append(closeButton);
+        batchSelectMenu.prepend(closeButton);
       })();
 
       div.append(skipAreaInfoButton, rangeAttackButton, autoJoinButton, settingsButton);
@@ -1159,27 +1161,34 @@
 
   scaleContentsToFit(grid.parentNode, grid);
 
-  function refreshAreaInfo(){
-    fetch('')
-    .then(res => res.ok?res.text() : Promise.reject('res.ng'))
-    .then(text => {
-      const doc = new DOMParser().parseFromString(text,'text/html');
+  async function refreshArenaInfo() {
+    const refreshedCells = [];
+  
+    try {
+      const res = await fetch('');
+      if (!res.ok) throw new Error('res.ng');
+  
+      const text = await res.text();
+      const doc = new DOMParser().parseFromString(text, 'text/html');
       const h1 = doc?.querySelector('h1')?.textContent;
-      if(h1 !== 'どんぐりチーム戦い') return Promise.reject(`title.ng info`);
+      if (h1 !== 'どんぐりチーム戦い') throw new Error('title.ng info');
+  
       const currentCells = grid.querySelectorAll('.cell');
       const scriptContent = doc.querySelector('.grid > script').textContent;
-
+  
       const cellColorsString = scriptContent.match(/const cellColors = ({.+?})/s)[1];
       const validJsonStr = cellColorsString.replace(/'/g, '"').replace(/,\s*}/, '}');
       const cellColors = JSON.parse(validJsonStr);
-
+  
       const newGrid = doc.querySelector('.grid');
       const rows = Number(newGrid.style.gridTemplateRows.match(/repeat\((\d+), 35px\)/)[1]);
       const cols = Number(newGrid.style.gridTemplateColumns.match(/repeat\((\d+), 35px\)/)[1]);
-      if(currentCells.length !== (rows * cols)){
+  
+      if (currentCells.length !== rows * cols) {
         grid.style.gridTemplateRows = newGrid.style.gridTemplateRows;
         grid.style.gridTemplateColumns = newGrid.style.gridTemplateColumns;
         grid.innerHTML = '';
+  
         for (let i = 0; i < rows; i++) {
           for (let j = 0; j < cols; j++) {
             const cell = document.createElement('div');
@@ -1191,13 +1200,16 @@
             cell.style.border = '1px solid #ccc';
             cell.style.cursor = 'pointer';
             cell.style.transition = 'background-color 0.3s';
+  
             const cellKey = `${i}-${j}`;
             if (cellColors[cellKey]) {
               cell.style.backgroundColor = cellColors[cellKey];
             } else {
               cell.style.backgroundColor = '#ffffff00';
             }
+  
             grid.appendChild(cell);
+            refreshedCells.push(cell);
           }
         }
       } else {
@@ -1205,26 +1217,43 @@
           const row = cell.dataset.row;
           const col = cell.dataset.col;
           const cellKey = `${row}-${col}`;
-          if(cellColors[cellKey]) {
-            cell.style.backgroundColor = cellColors[cellKey];
-          } else {
-            cell.style.backgroundColor = 'rgb(255,255,255,0)';
+
+          const cellColorCode = '#' + cell.style.backgroundColor.match(/\d+/g)
+            .map(v => Number(v).toString(16).toLowerCase().padStart(2, '0'))
+            .join('');
+  
+          if (cellColors[cellKey]) {
+            if (cellColorCode !== cellColors[cellKey].toLowerCase()) {
+              cell.style.backgroundColor = cellColors[cellKey];
+              refreshedCells.push(cell);
+            }
+          } else if (cellColorCode !== '#ffffff00') {
+            cell.style.backgroundColor = '#ffffff00';
+            refreshedCells.push(cell);
           }
+          
           const rgb = cell.style.backgroundColor.match(/\d+/g);
           const brightness = 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
           cell.style.color = brightness > 128 ? '#000' : '#fff';
-        })
+        });
       }
-
+  
       const tables = document.querySelectorAll('table');
       const newTables = doc.querySelectorAll('table');
-      newTables.forEach((table,i) => {
+      newTables.forEach((table, i) => {
         tables[i].replaceWith(table);
-      })
-    }).catch(e=>console.error(e))
+      });
+  
+      console.log(refreshedCells);
+      return refreshedCells;
+    } catch (e) {
+      console.error(e);
+    }
   }
-  async function fetchArenaInfo(){
-    refreshAreaInfo();
+  
+  async function fetchArenaInfo(refreshAll){
+    const refreshedCells = await refreshArenaInfo();
+    console.log(refreshedCells);
     grid.style.gridTemplateRows = grid.style.gridTemplateRows.replace('35px','65px');
     grid.style.gridTemplateColumns = grid.style.gridTemplateColumns.replace('35px','105px');
     grid.parentNode.style.height = null;
@@ -1234,39 +1263,48 @@
       grid.style.gridTemplateColumns = 'repeat(8, 105px)';
     }
 
-    [...document.querySelectorAll('.cell')].forEach(elm => {
-      let row = elm.dataset.row,
-      col = elm.dataset.col,
-      url = `https://donguri.5ch.net/teambattle?r=${row}&c=${col}`;
-      fetch(url)
-      .then(res=>
-        res.ok?res.text():Promise.reject('res.ng')
-      )
-      .then(text => {
-        let doc = new DOMParser().parseFromString(text, 'text/html'),
-        h1 = doc?.querySelector('h1')?.textContent;
-        if(h1 !== 'どんぐりチーム戦い') return Promise.reject(`title.ng [${row}][${col}][${h1}]`);
-        let cond = doc.querySelector('small')?.textContent || '';
-        if(!cond) return Promise.reject(`cond.ng [${row}][${col}][${h1}]`);
-        let holder = doc.querySelector('strong')?.textContent || '',
-        shortenCond = cond.replace('[エリート]','e').replace('から','-').replace(/(まで|\[|\]|\||\s)/g,'');
-        const p = [document.createElement('p'), document.createElement('p')];
-        p[0].textContent = shortenCond;
-        p[1].textContent = holder;
-        p[0].style.margin = '0';
-        p[1].style.margin = '0';
-        const cell = elm.cloneNode();
-        cell.append(p[0],p[1]);
-        cell.style.overflow = 'hidden';
-        cell.style.width = '100px';
-        cell.style.height = '60px';
-        cell.style.borderWidth = '3px';
-        cell.addEventListener('click', ()=>{
-          handleCellClick (cell);
-        });
-        elm.replaceWith(cell);
-      })
-      .catch(e=>console.error(e))
+    const cells = grid.querySelectorAll('.cell');
+    cells.forEach(elm => {
+      const hasInfo = elm.querySelector('p') !== null;
+      const isRefreshed = refreshedCells.includes(elm);
+      if(refreshAll || !hasInfo || isRefreshed) {
+        let row = elm.dataset.row,
+        col = elm.dataset.col,
+        url = `https://donguri.5ch.net/teambattle?r=${row}&c=${col}`;
+        fetch(url)
+          .then(res =>
+            res.ok?res.text():Promise.reject('res.ng')
+          )
+          .then(text => {
+            let doc = new DOMParser().parseFromString(text, 'text/html'),
+            h1 = doc?.querySelector('h1')?.textContent;
+            if(h1 !== 'どんぐりチーム戦い') return Promise.reject(`title.ng [${row}][${col}][${h1}]`);
+            let cond = doc.querySelector('small')?.textContent || '';
+            if(!cond) return Promise.reject(`cond.ng [${row}][${col}][${h1}]`);
+            let holder = doc.querySelector('strong')?.textContent || '',
+            shortenCond = cond.replace('[エリート]','e').replace('から','-').replace(/(まで|\[|\]|\||\s)/g,'');
+            const p = [document.createElement('p'), document.createElement('p')];
+            p[0].textContent = shortenCond;
+            p[1].textContent = holder;
+            p[0].style.margin = '0';
+            p[1].style.margin = '0';
+            const cell = elm.cloneNode();
+            cell.append(p[0],p[1]);
+            cell.style.overflow = 'hidden';
+            cell.style.width = '100px';
+            cell.style.height = '60px';
+            cell.style.borderWidth = '3px';
+            const rgb = cell.style.backgroundColor.match(/\d+/g);
+            const brightness = 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
+            cell.style.color = brightness > 128 ? '#000' : '#fff';
+  
+            cell.addEventListener('click', ()=>{
+              handleCellClick (cell);
+            });
+            elm.replaceWith(cell);
+          })
+          .catch(e=>console.error(e))
+      }
     })
   }
 
