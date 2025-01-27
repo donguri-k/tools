@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         donguri arena assist tool
-// @version      1.1c
+// @version      1.1d_test1
 // @description  fix arena ui and add functions
 // @author       7234e634
 // @match        https://donguri.5ch.net/teambattle
@@ -55,9 +55,11 @@
     button.style.whiteSpace = 'nowrap';
     button.style.overflow = 'hidden';
     button.style.boxSizing = 'border-box';
+    button.style.padding = '2px';
+    button.style.width = '6em';
+    button.style.fontSize = '65%';
 
     if (vw < 768) {
-      button.style.fontSize = '70%';
       progressBarContainer.style.fontSize = '60%';
     }
 
@@ -67,12 +69,6 @@
       const isSubMenuOpen = subMenu.style.display === 'flex';
       subMenu.style.display = isSubMenuOpen ? 'none' : 'flex';
     })
-
-    const subMenu = document.createElement('div');
-    subMenu.style.display = 'none';
-    subMenu.style.flexWrap = 'nowrap';
-    subMenu.style.overflowX = 'hidden';
-    subMenu.style.position = 'relative';
   
     const equipButton = button.cloneNode();
     equipButton.textContent = '■装備';
@@ -80,13 +76,34 @@
       panel.style.display = 'flex';
     });
 
+    let currnetSort = 'default';
+    const sortButton = button.cloneNode();
+    sortButton.innerText = 'ソート\n切り替え';
+    sortButton.style.background = '#ffb300';
+    sortButton.style.color = '#000';
+    sortButton.addEventListener('click', ()=>{
+      if(currnetSort === 'default') {
+        sortCells('cond');
+        currnetSort = 'cond';
+      } else {
+        sortCells('default');
+        currnetSort = 'default';
+      }
+    })
+
     const cellButton = button.cloneNode();
-    cellButton.textContent = '詳細取得/更新';
+    cellButton.innerText = '詳細更新';
     cellButton.addEventListener('click',fetchArenaInfo);
   
     const refreshButton = button.cloneNode();
-    refreshButton.textContent = '陣地更新';
+    refreshButton.innerText = '陣地更新';
     refreshButton.addEventListener('click',refreshAreaInfo);
+
+    const subMenu = document.createElement('div');
+    subMenu.style.display = 'none';
+    subMenu.style.flexWrap = 'nowrap';
+    subMenu.style.overflowX = 'hidden';
+    subMenu.style.position = 'relative';
 
     (()=>{
       const subButton = button.cloneNode();
@@ -131,21 +148,6 @@
         }
       })
 
-      let currnetSort = 'default';
-      const sortButton = subButton.cloneNode();
-      sortButton.innerText = 'ソート\n切り替え';
-      sortButton.style.background = '#ffb300';
-      sortButton.style.color = '#000';
-      sortButton.addEventListener('click', ()=>{
-        if(currnetSort === 'default') {
-          sortCells('cond');
-          currnetSort = 'cond';
-        } else {
-          sortCells('default');
-          currnetSort = 'default';
-        }
-      })
-      
       const autoJoinButton = subButton.cloneNode();
       autoJoinButton.innerText = '自動参加\nモード';
       autoJoinButton.style.background = '#ffb300';
@@ -221,18 +223,76 @@
         slideMenu.style.transform = 'translateX(-100%)';
         cellSelectorActivate = true;
       })
-      
-      const attackStartButton = subButton.cloneNode();
-      attackStartButton.textContent = '攻撃開始';
-      attackStartButton.style.background = '#f64';
-      attackStartButton.style.color = '#fff';
-      attackStartButton.addEventListener('click', async()=>{
-        attackStartButton.disabled = true;
-        rangeAttackProcessing = true;
-        await rangeAttack();
-        attackStartButton.disabled = false;
-        rangeAttackProcessing = false;
+
+      const closeSlideMenuButton = subButton.cloneNode();
+      closeSlideMenuButton.textContent = 'やめる';
+      closeSlideMenuButton.style.background = '#888';
+      closeSlideMenuButton.style.color = '#fff';
+      closeSlideMenuButton.addEventListener('click', ()=>{
+        slideMenu.style.transform = 'translateX(0)';
+        cellSelectorActivate = false;
       })
+      
+      const startRangeAttackButton = subButton.cloneNode();
+      startRangeAttackButton.textContent = '攻撃開始';
+      startRangeAttackButton.style.background = '#f64';
+      startRangeAttackButton.style.color = '#fff';
+      startRangeAttackButton.addEventListener('click', async()=>{
+        rangeAttackProcessing = true;
+        rangeAttackLoopCount = 0;
+        switchRangeAttackButtons();
+        await rangeAttack();
+        rangeAttackProcessing = false;
+        switchRangeAttackButtons();
+      })
+
+      const pauseRangeAttackButton = subButton.cloneNode();
+      pauseRangeAttackButton.textContent = '一時停止';
+      pauseRangeAttackButton.style.background = '#888';
+      pauseRangeAttackButton.style.color = '#fff';
+      pauseRangeAttackButton.addEventListener('click', ()=>{
+        if (!rangeAttackProcessing) return;
+        rangeAttackProcessing = false;
+        switchRangeAttackButtons();
+      })
+
+      const resumeRangeAttackButton = subButton.cloneNode();
+      resumeRangeAttackButton.textContent = '再開';
+      resumeRangeAttackButton.style.background = '#f64';
+      resumeRangeAttackButton.style.color = '#fff';
+      resumeRangeAttackButton.style.display = 'none';
+      resumeRangeAttackButton.addEventListener('click', async()=>{
+        rangeAttackProcessing = true;
+        switchRangeAttackButtons();
+        await rangeAttack();
+        rangeAttackProcessing = false;
+        switchRangeAttackButtons();
+      })
+
+      const abortRangeAttackButton = subButton.cloneNode();
+      abortRangeAttackButton.textContent = '停止';
+      abortRangeAttackButton.style.background = '#888';
+      abortRangeAttackButton.style.color = '#fff';
+      abortRangeAttackButton.addEventListener('click', ()=>{
+        if (!rangeAttackProcessing) return;
+        rangeAttackProcessing = false;
+        rangeAttackLoopCount = 0;
+        switchRangeAttackButtons();
+      })
+
+      function switchRangeAttackButtons (){
+        if(rangeAttackProcessing) {
+          startRangeAttackButton.disabled = true;
+          resumeRangeAttackButton.style.display = 'none';
+          pauseRangeAttackButton.style.display = '';
+        } else {
+          startRangeAttackButton.disabled = false;
+          if (rangeAttackLoopCount !== 0) {
+            resumeRangeAttackButton.style.display = '';
+            pauseRangeAttackButton.style.display = 'none';
+          }
+        }
+      }
 
       const deselectButton = subButton.cloneNode();
       deselectButton.textContent = '選択解除';
@@ -245,18 +305,63 @@
           cell.style.borderColor = '#ccc';
         });
       })
-
-      const closeSlideMenuButton = subButton.cloneNode();
-      closeSlideMenuButton.textContent = '閉じる';
-      closeSlideMenuButton.style.background = '#888';
-      closeSlideMenuButton.style.color = '#fff';
-      closeSlideMenuButton.addEventListener('click', ()=>{
-        slideMenu.style.transform = 'translateX(0)';
-        cellSelectorActivate = false;
+      
+      const batchSelectButton = subButton.cloneNode();
+      batchSelectButton.textContent = '一括選択';
+      batchSelectButton.style.background = '#ffb300';
+      batchSelectButton.style.color = '#000';
+      batchSelectButton.addEventListener('click', ()=>{
+        batchSelectMenu.style.display = 'flex';
       })
+      const batchSelectMenu = document.createElement('div');
+      batchSelectMenu.style.display = 'none';
+      batchSelectMenu.style.flex = '1';
+      batchSelectMenu.style.justifyContent = 'center';
+      batchSelectMenu.style.gap = '2px';
+      batchSelectMenu.style.position = 'absolute';
+      batchSelectMenu.style.width = '100%';
+      batchSelectMenu.style.height = '100%';
+      batchSelectMenu.style.background = '#fff';
 
-      div.append(skipAreaInfoButton, rangeAttackButton, sortButton, autoJoinButton, settingsButton);
-      slideMenu.append(attackStartButton, deselectButton, closeSlideMenuButton);
+      (()=>{
+        const ranks = ['N', 'R', 'SR', 'SSR', 'UR'];
+        ranks.forEach(rank=>{
+          const rankButton = subButton.cloneNode();
+          rankButton.style.width = '4.5em';
+          rankButton.style.background = '#ffb300';
+          rankButton.style.color = '#000';
+          rankButton.textContent = rank;
+          rankButton.addEventListener('click', ()=>{
+            const cells = document.querySelectorAll('.cell');
+            cells.forEach(cell => {
+              const cellRank = cell.querySelector('p').textContent;
+              const regex = new RegExp(`\\b${rank}(だけ)?e?$`);
+              const match = cellRank.match(regex);
+              if(match) {
+                cell.classList.add('selected');
+                cell.style.borderColor = '#f64';
+              } else {
+                cell.classList.remove('selected');
+                cell.style.borderColor = '#ccc';
+              }
+              batchSelectMenu.style.display = 'none';
+            })
+          })
+          batchSelectMenu.append(rankButton);
+        })
+        const closeButton = subButton.cloneNode();
+        closeButton.style.width = '4.5em';
+        closeButton.style.background = '#888';
+        closeButton.style.color = '#fff';
+        closeButton.textContent = 'やめる';
+        closeButton.addEventListener('click', ()=>{
+          batchSelectMenu.style.display = 'none';
+        })
+        batchSelectMenu.append(closeButton);
+      })();
+
+      div.append(skipAreaInfoButton, rangeAttackButton, autoJoinButton, settingsButton);
+      slideMenu.append(closeSlideMenuButton, startRangeAttackButton, pauseRangeAttackButton, resumeRangeAttackButton, abortRangeAttackButton, batchSelectButton, deselectButton, batchSelectMenu);
       subMenu.append(div, slideMenu);
 
     })();
@@ -266,7 +371,7 @@
     main.style.flexWrap = 'nowrap';
     main.style.gap = '2px';
     main.style.justifyContent = 'center';
-    main.append(menuButton, equipButton, refreshButton, cellButton);
+    main.append(menuButton, equipButton, sortButton, refreshButton, cellButton);
 
     toolbar.append(main, subMenu);
   })();
@@ -503,7 +608,7 @@
       const link = document.createElement('a');
       link.style.color = '#666';
       link.style.textDecoration = 'underline';
-      link.textContent = 'arena assist tool - v1.1c';
+      link.textContent = 'arena assist tool - v1.1d';
       link.href = 'https://donguri-k.github.io/tools/arena-assist-tool';
       link.target = '_blank';
       const author = document.createElement('input');
@@ -1300,7 +1405,8 @@
     }
   }
 
-  async function rangeAttack () {
+  let rangeAttackLoopCount = 0;
+  async function rangeAttack () {  
     const selectedCells = document.querySelectorAll('.cell.selected');
     if(selectedCells.length === 0) {
       alert('セルを選択してください');
@@ -1315,7 +1421,12 @@
     arenaResult.textContent = '';
     arenaResult.show();
 
-    for(const [i, cell] of selectedCells.entries()) {
+    //for(const [i, cell] of selectedCells.entries()) {
+    for(let i = rangeAttackLoopCount; i < selectedCells.length; i++){
+      console.log(rangeAttackLoopCount);
+      if(!rangeAttackProcessing) return;
+
+      const cell = selectedCells[i];
       const row = cell.dataset.row;
       const col = cell.dataset.col;
       const options = {
@@ -1325,13 +1436,14 @@
         },
         body: `row=${row}&col=${col}`
       };
+      cell.style.borderColor = '#4f6';
 
       try {
         const response = await fetch('/teamchallenge', options);
         const text = await response.text();
         let lastLine = text.trim().split('\n').pop();
         if(
-          lastLine.startsWith('<html') ||
+          lastLine.length > 100 ||
           lastLine === 'どんぐりが見つかりませんでした。'
         ) {
           throw new Error('どんぐりが見つかりませんでした。');
@@ -1346,21 +1458,27 @@
         const p = pTemplate.cloneNode();
         p.textContent = `(${row}, ${col}) ${lastLine}`;
         arenaResult.prepend(p);
+        rangeAttackLoopCount++;
       } catch (e) {
         const p = pTemplate.cloneNode();
-        p.textContent = `(${row}, ${col}) [中止] ${e}`;
+        p.textContent = `(${row}, ${col}) [中断] ${e}`;
         arenaResult.prepend(p);
         errorOccurred = true;
         break;
       }
       if (i !== selectedCells.length-1) {
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        await new Promise(resolve => setTimeout(resolve, 1500));
       }
+      cell.style.borderColor = '#f64';
     }
     if(!errorOccurred) {
       const p = pTemplate.cloneNode();
       p.textContent = `完了`;
       arenaResult.prepend(p);
+      rangeAttackLoopCount = 0;
+      return true;
+    } else {
+      return false;
     }
   }
 
@@ -1486,7 +1604,8 @@
       ],
       retry: [
         'あなたのチームは動きを使い果たしました。しばらくお待ちください。',
-        'ng<>too fast'
+        'ng<>too fast',
+        'res.ng'
       ],
       reset: [
         'No region',
@@ -1505,8 +1624,8 @@
         body: body,
         headers: headers
       })
-        .then(response => response.ok ? response.text() : Promise.reject(`res.ng[${response.status}]`))
-        .catch(error => logMessage(regions[index], '', `Error: ${error}`))
+        .then(response => response.ok ? response.text() : Promise.reject(`res.ng [${response.status}]`))
+        .catch(error => error)
         .then(text => {
           const lastLine = text.trim().split('\n').pop();
           let message = lastLine;
@@ -1525,7 +1644,7 @@
             return;
           } else if (text.startsWith('アリーナチャレンジ開始')){
             message = '[成功] ' + lastLine;
-          } else if (text.startsWith('<html')){
+          } else if (lastLine.length > 100) {
             message = 'どんぐりシステム';
             nextStep = [index, 2];
           }
