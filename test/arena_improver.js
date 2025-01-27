@@ -249,7 +249,7 @@
       })
 
       const pauseRangeAttackButton = subButton.cloneNode();
-      pauseRangeAttackButton.textContent = '一時停止';
+      pauseRangeAttackButton.textContent = '中断';
       pauseRangeAttackButton.style.background = '#888';
       pauseRangeAttackButton.style.color = '#fff';
       pauseRangeAttackButton.addEventListener('click', ()=>{
@@ -270,7 +270,7 @@
         rangeAttackProcessing = false;
         switchRangeAttackButtons();
       })
-
+/*
       const abortRangeAttackButton = subButton.cloneNode();
       abortRangeAttackButton.textContent = '停止';
       abortRangeAttackButton.style.background = '#888';
@@ -281,7 +281,7 @@
         rangeAttackLoopCount = 0;
         switchRangeAttackButtons();
       })
-
+*/
       function switchRangeAttackButtons (){
         if(rangeAttackProcessing) {
           startRangeAttackButton.disabled = true;
@@ -363,7 +363,7 @@
       })();
 
       div.append(skipAreaInfoButton, rangeAttackButton, autoJoinButton, settingsButton);
-      slideMenu.append(closeSlideMenuButton, startRangeAttackButton, pauseRangeAttackButton, resumeRangeAttackButton, abortRangeAttackButton, batchSelectButton, deselectButton, batchSelectMenu);
+      slideMenu.append(closeSlideMenuButton, startRangeAttackButton, pauseRangeAttackButton, resumeRangeAttackButton, batchSelectButton, deselectButton, batchSelectMenu);
       subMenu.append(div, slideMenu);
 
     })();
