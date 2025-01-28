@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <link rel="stylesheet" href="./css/main.css?20250121">
+    <link rel="stylesheet" href="./css/main.css?20250128">
     <link rel="icon" href="/tools/favicon.ico">
     <title>donguri Arena Assist Tool</title>
   </head>
@@ -15,7 +15,7 @@
       <h1>donguri Arena Assist Tool</h1>
       <div class="container">
         <div id="script">
-          <h2>▼Script v1.1c</h2>
+          <h2>▼Script v1.1d</h2>
           <h3>v0.9以前を使用している場合は再登録してください。</h3>
           <p>Userscript版</p>
           <a href="script/arena_assist_tool.js">https://donguri-k.github.io/tools/script/arena_assist_tool.js</a>
@@ -39,10 +39,10 @@
           <p>とりあえず作成。まだまだ制作中。</p>
           <ul>
             <li>
-              <p>[詳細取得] アリーナの制限とホルダーを表示、陣地の色と保有地域の更新</p>
-              <p>[陣地更新] 色と保有地域の情報のみ更新</p>
+              <p>[エリア情報更新/再取得] アリーナの制限とホルダーを表示、陣地の色と保有地域の更新</p>
+              <p>更新の場合は未取得のエリアと色が変わったエリアのみ取得。再取得は全てのエリアを読み込み直す。基本的にはエリア情報更新で良い。</p>
               <p>読み込みに失敗した場合は、しばらく時間をおいてから再試行すること。</p>
-              <p>※あまりにも短い間隔で詳細更新を連打しないよう。</p>
+              <p>※短い間隔で再取得を連打しないよう。</p>
             </li>
             <li>装備制限でソート可能</li>
             <li style="list-style: none;">
@@ -65,7 +65,8 @@
             <li>表示の問題をいくつか改善。具体的には、画面外にはみ出る問題を解消、画面幅に合わせた縮小表示、スマートフォンのみ一行あたり最大8マスまでに変更。</li>
             <li>アリーナをページ内で開き、対戦ログも表示するようにした。</li>
             <li>セルをクリックで直接アリーナに挑戦するオプションを追加。エリア情報を開いた状態だと、情報取得も同時に行う。閉じた状態なら対戦のみ。</li>
-            <li>セルを複数選択して連続で挑戦するモードを追加。[範囲攻撃]モードでセルをクリックすると赤枠になり、選択された状態になる。攻撃開始で対象のセルを2秒毎に攻撃。弾切れとtoo fast及びどんぐりが見つからない場合は中止。</li>
+            <li>セルを複数選択して連続で挑戦するモードを追加。[範囲攻撃]モードでセルをクリックすると赤枠になり、選択された状態になる。攻撃開始で対象のセルを1.5秒毎に攻撃。行動力切れとtoo fast及びどんぐりが見つからない場合は中断。</li>
+            <li>中断後の再開時は、中断前に選択されていたセルが対象になる。（選択状態が解除されている場合はスキップ）</li>
             <li style="list-style: none;">
               <ul style="padding:0">
                 <li>
@@ -111,6 +112,15 @@
         <div id="update" style="font-size:13px">
           <h2>▼更新履歴</h2>
           <dl>
+            <dt>v1.1d - 2025/01/28</dt>
+            <dd>toolbarのボタンサイズ変更</dd>
+            <dd>ソート切り替えボタンの位置変更</dd>
+            <dd>範囲攻撃の一括選択を実装</dd>
+            <dd>- 中断・再開を追加</dd>
+            <dd>- 攻撃中のセルの枠の色を緑に変更</dd>
+            <dd>- ディレイを2秒→1.5秒に変更</dd>
+            <dd>エリア情報取得の処理を変更</dd>
+            <dd>メニュー</dd>
             <dt>v1.1c - 2025/01/24</dt>
             <dd>メニューのUI変更</dd>
             <dd>アリーナの情報取得をスキップして対戦するモードを追加</dd>
