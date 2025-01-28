@@ -92,13 +92,13 @@
     const cellButton = button.cloneNode();
     cellButton.innerText = 'エリア情報\n再取得';
     cellButton.addEventListener('click',()=>{
-      fetchArenaInfo(true);
+      fetchAreaInfo(true);
     });
   
     const refreshButton = button.cloneNode();
     refreshButton.innerText = 'エリア情報\n更新';
     refreshButton.addEventListener('click',()=>{
-      fetchArenaInfo(false);
+      fetchAreaInfo(false);
     });
 
     const subMenu = document.createElement('div');
@@ -241,7 +241,7 @@
       startRangeAttackButton.style.color = '#fff';
       startRangeAttackButton.addEventListener('click', async()=>{
         rangeAttackProcessing = true;
-        rangeAttackLoopCount = 0;
+        rangeAttackQueue.length = 0;
         switchRangeAttackButtons();
         await rangeAttack();
         rangeAttackProcessing = false;
@@ -270,18 +270,7 @@
         rangeAttackProcessing = false;
         switchRangeAttackButtons();
       })
-/*
-      const abortRangeAttackButton = subButton.cloneNode();
-      abortRangeAttackButton.textContent = '停止';
-      abortRangeAttackButton.style.background = '#888';
-      abortRangeAttackButton.style.color = '#fff';
-      abortRangeAttackButton.addEventListener('click', ()=>{
-        if (!rangeAttackProcessing) return;
-        rangeAttackProcessing = false;
-        rangeAttackLoopCount = 0;
-        switchRangeAttackButtons();
-      })
-*/
+
       function switchRangeAttackButtons (){
         if(rangeAttackProcessing) {
           startRangeAttackButton.disabled = true;
@@ -289,7 +278,7 @@
           pauseRangeAttackButton.style.display = '';
         } else {
           startRangeAttackButton.disabled = false;
-          if (rangeAttackLoopCount !== 0) {
+          if (rangeAttackQueue.length > 0) {
             resumeRangeAttackButton.style.display = '';
             pauseRangeAttackButton.style.display = 'none';
           }
@@ -1251,7 +1240,7 @@
     }
   }
   
-  async function fetchArenaInfo(refreshAll){
+  async function fetchAreaInfo(refreshAll){
     const refreshedCells = await refreshArenaInfo();
     console.log(refreshedCells);
     grid.style.gridTemplateRows = grid.style.gridTemplateRows.replace('35px','65px');
@@ -1443,10 +1432,13 @@
     }
   }
 
-  let rangeAttackLoopCount = 0;
-  async function rangeAttack () {  
-    const selectedCells = document.querySelectorAll('.cell.selected');
-    if(selectedCells.length === 0) {
+  let rangeAttackQueue = [];
+  async function rangeAttack () {
+    if(rangeAttackQueue.length === 0) {
+      rangeAttackQueue = [...document.querySelectorAll('.cell.selected')];
+    }
+
+    if(rangeAttackQueue.length === 0) {
       alert('セルを選択してください');
       return;
     }
@@ -1459,12 +1451,17 @@
     arenaResult.textContent = '';
     arenaResult.show();
 
-    //for(const [i, cell] of selectedCells.entries()) {
-    for(let i = rangeAttackLoopCount; i < selectedCells.length; i++){
-      console.log(rangeAttackLoopCount);
+    console.log(rangeAttackQueue);
+    //for(const cell of rangeAttackQueue) {
+    while(rangeAttackQueue.length > 0) {
       if(!rangeAttackProcessing) return;
 
-      const cell = selectedCells[i];
+      const cell = rangeAttackQueue[0];
+      // 攻撃前に選択解除された場合
+      if(!cell.classList.contains('selected')) {
+        rangeAttackQueue.shift();
+        continue;
+      }
       const row = cell.dataset.row;
       const col = cell.dataset.col;
       const options = {
@@ -1488,7 +1485,9 @@
         }
         if(
           lastLine === 'あなたのチームは動きを使い果たしました。しばらくお待ちください。' ||
-          lastLine === 'ng<>too fast'
+          lastLine === 'ng<>too fast' ||
+          lastLine === '武器と防具を装備しなければなりません。' ||
+          lastLine === '最初にチームに参加する必要があります。'
         ) {
           throw new Error(lastLine);
         }
@@ -1496,7 +1495,7 @@
         const p = pTemplate.cloneNode();
         p.textContent = `(${row}, ${col}) ${lastLine}`;
         arenaResult.prepend(p);
-        rangeAttackLoopCount++;
+        rangeAttackQueue.shift();
       } catch (e) {
         const p = pTemplate.cloneNode();
         p.textContent = `(${row}, ${col}) [中断] ${e}`;
@@ -1504,16 +1503,15 @@
         errorOccurred = true;
         break;
       }
-      if (i !== selectedCells.length-1) {
+      if (rangeAttackQueue.length > 0) {
         await new Promise(resolve => setTimeout(resolve, 1500));
       }
-      cell.style.borderColor = '#f64';
+      cell.style.borderColor = cell.classList.contains('selected') ? '#f64' : '#ccc';
     }
     if(!errorOccurred) {
       const p = pTemplate.cloneNode();
       p.textContent = `完了`;
       arenaResult.prepend(p);
-      rangeAttackLoopCount = 0;
       return true;
     } else {
       return false;
