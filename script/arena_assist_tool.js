@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         donguri arena assist tool
-// @version      1.1c
+// @version      1.1d
 // @description  fix arena ui and add functions
 // @author       7234e634
 // @match        https://donguri.5ch.net/teambattle
@@ -55,9 +55,11 @@
     button.style.whiteSpace = 'nowrap';
     button.style.overflow = 'hidden';
     button.style.boxSizing = 'border-box';
+    button.style.padding = '2px';
+    button.style.width = '6em';
+    button.style.fontSize = '65%';
 
     if (vw < 768) {
-      button.style.fontSize = '70%';
       progressBarContainer.style.fontSize = '60%';
     }
 
@@ -67,12 +69,6 @@
       const isSubMenuOpen = subMenu.style.display === 'flex';
       subMenu.style.display = isSubMenuOpen ? 'none' : 'flex';
     })
-
-    const subMenu = document.createElement('div');
-    subMenu.style.display = 'none';
-    subMenu.style.flexWrap = 'nowrap';
-    subMenu.style.overflowX = 'hidden';
-    subMenu.style.position = 'relative';
   
     const equipButton = button.cloneNode();
     equipButton.textContent = '■装備';
@@ -80,13 +76,36 @@
       panel.style.display = 'flex';
     });
 
+    let currnetSort = 'default';
+    const sortButton = button.cloneNode();
+    sortButton.innerText = 'ソート\n切り替え';
+    sortButton.addEventListener('click', ()=>{
+      if(currnetSort === 'default') {
+        sortCells('cond');
+        currnetSort = 'cond';
+      } else {
+        sortCells('default');
+        currnetSort = 'default';
+      }
+    })
+
     const cellButton = button.cloneNode();
-    cellButton.textContent = '詳細取得/更新';
-    cellButton.addEventListener('click',fetchArenaInfo);
+    cellButton.innerText = 'エリア情報\n再取得';
+    cellButton.addEventListener('click',()=>{
+      fetchAreaInfo(true);
+    });
   
     const refreshButton = button.cloneNode();
-    refreshButton.textContent = '陣地更新';
-    refreshButton.addEventListener('click',refreshAreaInfo);
+    refreshButton.innerText = 'エリア情報\n更新';
+    refreshButton.addEventListener('click',()=>{
+      fetchAreaInfo(false);
+    });
+
+    const subMenu = document.createElement('div');
+    subMenu.style.display = 'none';
+    subMenu.style.flexWrap = 'nowrap';
+    subMenu.style.overflowX = 'hidden';
+    subMenu.style.position = 'relative';
 
     (()=>{
       const subButton = button.cloneNode();
@@ -131,21 +150,6 @@
         }
       })
 
-      let currnetSort = 'default';
-      const sortButton = subButton.cloneNode();
-      sortButton.innerText = 'ソート\n切り替え';
-      sortButton.style.background = '#ffb300';
-      sortButton.style.color = '#000';
-      sortButton.addEventListener('click', ()=>{
-        if(currnetSort === 'default') {
-          sortCells('cond');
-          currnetSort = 'cond';
-        } else {
-          sortCells('default');
-          currnetSort = 'default';
-        }
-      })
-      
       const autoJoinButton = subButton.cloneNode();
       autoJoinButton.innerText = '自動参加\nモード';
       autoJoinButton.style.background = '#ffb300';
@@ -190,7 +194,7 @@
         intervalInput.style.color = '#000';
         label.append(intervalInput, '秒');
     
-        const closeButton = button.cloneNode();
+        const closeButton = document.createElement('button');
         closeButton.style.fontSize = '100%';
         closeButton.textContent = '自動参加モードを終了';
         closeButton.addEventListener('click', ()=>{
@@ -221,18 +225,65 @@
         slideMenu.style.transform = 'translateX(-100%)';
         cellSelectorActivate = true;
       })
-      
-      const attackStartButton = subButton.cloneNode();
-      attackStartButton.textContent = '攻撃開始';
-      attackStartButton.style.background = '#f64';
-      attackStartButton.style.color = '#fff';
-      attackStartButton.addEventListener('click', async()=>{
-        attackStartButton.disabled = true;
-        rangeAttackProcessing = true;
-        await rangeAttack();
-        attackStartButton.disabled = false;
-        rangeAttackProcessing = false;
+
+      const closeSlideMenuButton = subButton.cloneNode();
+      closeSlideMenuButton.textContent = 'やめる';
+      closeSlideMenuButton.style.background = '#888';
+      closeSlideMenuButton.style.color = '#fff';
+      closeSlideMenuButton.addEventListener('click', ()=>{
+        slideMenu.style.transform = 'translateX(0)';
+        cellSelectorActivate = false;
       })
+      
+      const startRangeAttackButton = subButton.cloneNode();
+      startRangeAttackButton.textContent = '攻撃開始';
+      startRangeAttackButton.style.background = '#f64';
+      startRangeAttackButton.style.color = '#fff';
+      startRangeAttackButton.addEventListener('click', async()=>{
+        rangeAttackProcessing = true;
+        rangeAttackQueue.length = 0;
+        switchRangeAttackButtons();
+        await rangeAttack();
+        rangeAttackProcessing = false;
+        switchRangeAttackButtons();
+      })
+
+      const pauseRangeAttackButton = subButton.cloneNode();
+      pauseRangeAttackButton.textContent = '中断';
+      pauseRangeAttackButton.style.background = '#888';
+      pauseRangeAttackButton.style.color = '#fff';
+      pauseRangeAttackButton.addEventListener('click', ()=>{
+        if (!rangeAttackProcessing) return;
+        rangeAttackProcessing = false;
+        switchRangeAttackButtons();
+      })
+
+      const resumeRangeAttackButton = subButton.cloneNode();
+      resumeRangeAttackButton.textContent = '再開';
+      resumeRangeAttackButton.style.background = '#f64';
+      resumeRangeAttackButton.style.color = '#fff';
+      resumeRangeAttackButton.style.display = 'none';
+      resumeRangeAttackButton.addEventListener('click', async()=>{
+        rangeAttackProcessing = true;
+        switchRangeAttackButtons();
+        await rangeAttack();
+        rangeAttackProcessing = false;
+        switchRangeAttackButtons();
+      })
+
+      function switchRangeAttackButtons (){
+        if(rangeAttackProcessing) {
+          startRangeAttackButton.disabled = true;
+          resumeRangeAttackButton.style.display = 'none';
+          pauseRangeAttackButton.style.display = '';
+        } else {
+          startRangeAttackButton.disabled = false;
+          if (rangeAttackQueue.length > 0) {
+            resumeRangeAttackButton.style.display = '';
+            pauseRangeAttackButton.style.display = 'none';
+          }
+        }
+      }
 
       const deselectButton = subButton.cloneNode();
       deselectButton.textContent = '選択解除';
@@ -245,18 +296,63 @@
           cell.style.borderColor = '#ccc';
         });
       })
-
-      const closeSlideMenuButton = subButton.cloneNode();
-      closeSlideMenuButton.textContent = '閉じる';
-      closeSlideMenuButton.style.background = '#888';
-      closeSlideMenuButton.style.color = '#fff';
-      closeSlideMenuButton.addEventListener('click', ()=>{
-        slideMenu.style.transform = 'translateX(0)';
-        cellSelectorActivate = false;
+      
+      const batchSelectButton = subButton.cloneNode();
+      batchSelectButton.textContent = '一括選択';
+      batchSelectButton.style.background = '#ffb300';
+      batchSelectButton.style.color = '#000';
+      batchSelectButton.addEventListener('click', ()=>{
+        batchSelectMenu.style.display = 'flex';
       })
+      const batchSelectMenu = document.createElement('div');
+      batchSelectMenu.style.display = 'none';
+      batchSelectMenu.style.flex = '1';
+      batchSelectMenu.style.justifyContent = 'center';
+      batchSelectMenu.style.gap = '2px';
+      batchSelectMenu.style.position = 'absolute';
+      batchSelectMenu.style.width = '100%';
+      batchSelectMenu.style.height = '100%';
+      batchSelectMenu.style.background = '#fff';
 
-      div.append(skipAreaInfoButton, rangeAttackButton, sortButton, autoJoinButton, settingsButton);
-      slideMenu.append(attackStartButton, deselectButton, closeSlideMenuButton);
+      (()=>{
+        const ranks = ['N', 'R', 'SR', 'SSR', 'UR'];
+        ranks.forEach(rank=>{
+          const rankButton = subButton.cloneNode();
+          rankButton.style.width = '4.5em';
+          rankButton.style.background = '#ffb300';
+          rankButton.style.color = '#000';
+          rankButton.textContent = rank;
+          rankButton.addEventListener('click', ()=>{
+            const cells = document.querySelectorAll('.cell');
+            cells.forEach(cell => {
+              const cellRank = cell.querySelector('p').textContent;
+              const regex = new RegExp(`\\b${rank}(だけ)?e?$`);
+              const match = cellRank.match(regex);
+              if(match) {
+                cell.classList.add('selected');
+                cell.style.borderColor = '#f64';
+              } else {
+                cell.classList.remove('selected');
+                cell.style.borderColor = '#ccc';
+              }
+              batchSelectMenu.style.display = 'none';
+            })
+          })
+          batchSelectMenu.append(rankButton);
+        })
+        const closeButton = subButton.cloneNode();
+        closeButton.style.width = '4.5em';
+        closeButton.style.background = '#888';
+        closeButton.style.color = '#fff';
+        closeButton.textContent = 'やめる';
+        closeButton.addEventListener('click', ()=>{
+          batchSelectMenu.style.display = 'none';
+        })
+        batchSelectMenu.prepend(closeButton);
+      })();
+
+      div.append(skipAreaInfoButton, rangeAttackButton, autoJoinButton, settingsButton);
+      slideMenu.append(closeSlideMenuButton, startRangeAttackButton, pauseRangeAttackButton, resumeRangeAttackButton, batchSelectButton, deselectButton, batchSelectMenu);
       subMenu.append(div, slideMenu);
 
     })();
@@ -266,7 +362,7 @@
     main.style.flexWrap = 'nowrap';
     main.style.gap = '2px';
     main.style.justifyContent = 'center';
-    main.append(menuButton, equipButton, refreshButton, cellButton);
+    main.append(menuButton, equipButton, sortButton, refreshButton, cellButton);
 
     toolbar.append(main, subMenu);
   })();
@@ -503,7 +599,7 @@
       const link = document.createElement('a');
       link.style.color = '#666';
       link.style.textDecoration = 'underline';
-      link.textContent = 'arena assist tool - v1.1c';
+      link.textContent = 'arena assist tool - v1.1d';
       link.href = 'https://donguri-k.github.io/tools/arena-assist-tool';
       link.target = '_blank';
       const author = document.createElement('input');
@@ -1054,27 +1150,34 @@
 
   scaleContentsToFit(grid.parentNode, grid);
 
-  function refreshAreaInfo(){
-    fetch('')
-    .then(res => res.ok?res.text() : Promise.reject('res.ng'))
-    .then(text => {
-      const doc = new DOMParser().parseFromString(text,'text/html');
+  async function refreshArenaInfo() {
+    const refreshedCells = [];
+  
+    try {
+      const res = await fetch('');
+      if (!res.ok) throw new Error('res.ng');
+  
+      const text = await res.text();
+      const doc = new DOMParser().parseFromString(text, 'text/html');
       const h1 = doc?.querySelector('h1')?.textContent;
-      if(h1 !== 'どんぐりチーム戦い') return Promise.reject(`title.ng info`);
+      if (h1 !== 'どんぐりチーム戦い') throw new Error('title.ng info');
+  
       const currentCells = grid.querySelectorAll('.cell');
       const scriptContent = doc.querySelector('.grid > script').textContent;
-
+  
       const cellColorsString = scriptContent.match(/const cellColors = ({.+?})/s)[1];
       const validJsonStr = cellColorsString.replace(/'/g, '"').replace(/,\s*}/, '}');
       const cellColors = JSON.parse(validJsonStr);
-
+  
       const newGrid = doc.querySelector('.grid');
       const rows = Number(newGrid.style.gridTemplateRows.match(/repeat\((\d+), 35px\)/)[1]);
       const cols = Number(newGrid.style.gridTemplateColumns.match(/repeat\((\d+), 35px\)/)[1]);
-      if(currentCells.length !== (rows * cols)){
+  
+      if (currentCells.length !== rows * cols) {
         grid.style.gridTemplateRows = newGrid.style.gridTemplateRows;
         grid.style.gridTemplateColumns = newGrid.style.gridTemplateColumns;
         grid.innerHTML = '';
+  
         for (let i = 0; i < rows; i++) {
           for (let j = 0; j < cols; j++) {
             const cell = document.createElement('div');
@@ -1086,13 +1189,16 @@
             cell.style.border = '1px solid #ccc';
             cell.style.cursor = 'pointer';
             cell.style.transition = 'background-color 0.3s';
+  
             const cellKey = `${i}-${j}`;
             if (cellColors[cellKey]) {
               cell.style.backgroundColor = cellColors[cellKey];
             } else {
               cell.style.backgroundColor = '#ffffff00';
             }
+  
             grid.appendChild(cell);
+            refreshedCells.push(cell);
           }
         }
       } else {
@@ -1100,26 +1206,43 @@
           const row = cell.dataset.row;
           const col = cell.dataset.col;
           const cellKey = `${row}-${col}`;
-          if(cellColors[cellKey]) {
-            cell.style.backgroundColor = cellColors[cellKey];
-          } else {
-            cell.style.backgroundColor = 'rgb(255,255,255,0)';
+
+          const cellColorCode = '#' + cell.style.backgroundColor.match(/\d+/g)
+            .map(v => Number(v).toString(16).toLowerCase().padStart(2, '0'))
+            .join('');
+  
+          if (cellColors[cellKey]) {
+            if (cellColorCode !== cellColors[cellKey].toLowerCase()) {
+              cell.style.backgroundColor = cellColors[cellKey];
+              refreshedCells.push(cell);
+            }
+          } else if (cellColorCode !== '#ffffff00') {
+            cell.style.backgroundColor = '#ffffff00';
+            refreshedCells.push(cell);
           }
+          
           const rgb = cell.style.backgroundColor.match(/\d+/g);
           const brightness = 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
           cell.style.color = brightness > 128 ? '#000' : '#fff';
-        })
+        });
       }
-
+  
       const tables = document.querySelectorAll('table');
       const newTables = doc.querySelectorAll('table');
-      newTables.forEach((table,i) => {
+      newTables.forEach((table, i) => {
         tables[i].replaceWith(table);
-      })
-    }).catch(e=>console.error(e))
+      });
+  
+      console.log(refreshedCells);
+      return refreshedCells;
+    } catch (e) {
+      console.error(e);
+    }
   }
-  async function fetchArenaInfo(){
-    refreshAreaInfo();
+  
+  async function fetchAreaInfo(refreshAll){
+    const refreshedCells = await refreshArenaInfo();
+    console.log(refreshedCells);
     grid.style.gridTemplateRows = grid.style.gridTemplateRows.replace('35px','65px');
     grid.style.gridTemplateColumns = grid.style.gridTemplateColumns.replace('35px','105px');
     grid.parentNode.style.height = null;
@@ -1129,39 +1252,48 @@
       grid.style.gridTemplateColumns = 'repeat(8, 105px)';
     }
 
-    [...document.querySelectorAll('.cell')].forEach(elm => {
-      let row = elm.dataset.row,
-      col = elm.dataset.col,
-      url = `https://donguri.5ch.net/teambattle?r=${row}&c=${col}`;
-      fetch(url)
-      .then(res=>
-        res.ok?res.text():Promise.reject('res.ng')
-      )
-      .then(text => {
-        let doc = new DOMParser().parseFromString(text, 'text/html'),
-        h1 = doc?.querySelector('h1')?.textContent;
-        if(h1 !== 'どんぐりチーム戦い') return Promise.reject(`title.ng [${row}][${col}][${h1}]`);
-        let cond = doc.querySelector('small')?.textContent || '';
-        if(!cond) return Promise.reject(`cond.ng [${row}][${col}][${h1}]`);
-        let holder = doc.querySelector('strong')?.textContent || '',
-        shortenCond = cond.replace('[エリート]','e').replace('から','-').replace(/(まで|\[|\]|\||\s)/g,'');
-        const p = [document.createElement('p'), document.createElement('p')];
-        p[0].textContent = shortenCond;
-        p[1].textContent = holder;
-        p[0].style.margin = '0';
-        p[1].style.margin = '0';
-        const cell = elm.cloneNode();
-        cell.append(p[0],p[1]);
-        cell.style.overflow = 'hidden';
-        cell.style.width = '100px';
-        cell.style.height = '60px';
-        cell.style.borderWidth = '3px';
-        cell.addEventListener('click', ()=>{
-          handleCellClick (cell);
-        });
-        elm.replaceWith(cell);
-      })
-      .catch(e=>console.error(e))
+    const cells = grid.querySelectorAll('.cell');
+    cells.forEach(elm => {
+      const hasInfo = elm.querySelector('p') !== null;
+      const isRefreshed = refreshedCells.includes(elm);
+      if(refreshAll || !hasInfo || isRefreshed) {
+        let row = elm.dataset.row,
+        col = elm.dataset.col,
+        url = `https://donguri.5ch.net/teambattle?r=${row}&c=${col}`;
+        fetch(url)
+          .then(res =>
+            res.ok?res.text():Promise.reject('res.ng')
+          )
+          .then(text => {
+            let doc = new DOMParser().parseFromString(text, 'text/html'),
+            h1 = doc?.querySelector('h1')?.textContent;
+            if(h1 !== 'どんぐりチーム戦い') return Promise.reject(`title.ng [${row}][${col}][${h1}]`);
+            let cond = doc.querySelector('small')?.textContent || '';
+            if(!cond) return Promise.reject(`cond.ng [${row}][${col}][${h1}]`);
+            let holder = doc.querySelector('strong')?.textContent || '',
+            shortenCond = cond.replace('[エリート]','e').replace('から','-').replace(/(まで|\[|\]|\||\s)/g,'');
+            const p = [document.createElement('p'), document.createElement('p')];
+            p[0].textContent = shortenCond;
+            p[1].textContent = holder;
+            p[0].style.margin = '0';
+            p[1].style.margin = '0';
+            const cell = elm.cloneNode();
+            cell.append(p[0],p[1]);
+            cell.style.overflow = 'hidden';
+            cell.style.width = '100px';
+            cell.style.height = '60px';
+            cell.style.borderWidth = '3px';
+            const rgb = cell.style.backgroundColor.match(/\d+/g);
+            const brightness = 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
+            cell.style.color = brightness > 128 ? '#000' : '#fff';
+  
+            cell.addEventListener('click', ()=>{
+              handleCellClick (cell);
+            });
+            elm.replaceWith(cell);
+          })
+          .catch(e=>console.error(e))
+      }
     })
   }
 
@@ -1300,9 +1432,13 @@
     }
   }
 
+  let rangeAttackQueue = [];
   async function rangeAttack () {
-    const selectedCells = document.querySelectorAll('.cell.selected');
-    if(selectedCells.length === 0) {
+    if(rangeAttackQueue.length === 0) {
+      rangeAttackQueue = [...document.querySelectorAll('.cell.selected')];
+    }
+
+    if(rangeAttackQueue.length === 0) {
       alert('セルを選択してください');
       return;
     }
@@ -1315,7 +1451,17 @@
     arenaResult.textContent = '';
     arenaResult.show();
 
-    for(const [i, cell] of selectedCells.entries()) {
+    console.log(rangeAttackQueue);
+    //for(const cell of rangeAttackQueue) {
+    while(rangeAttackQueue.length > 0) {
+      if(!rangeAttackProcessing) return;
+
+      const cell = rangeAttackQueue[0];
+      // 攻撃前に選択解除された場合
+      if(!cell.classList.contains('selected')) {
+        rangeAttackQueue.shift();
+        continue;
+      }
       const row = cell.dataset.row;
       const col = cell.dataset.col;
       const options = {
@@ -1325,20 +1471,23 @@
         },
         body: `row=${row}&col=${col}`
       };
+      cell.style.borderColor = '#4f6';
 
       try {
         const response = await fetch('/teamchallenge', options);
         const text = await response.text();
         let lastLine = text.trim().split('\n').pop();
         if(
-          lastLine.startsWith('<html') ||
+          lastLine.length > 100 ||
           lastLine === 'どんぐりが見つかりませんでした。'
         ) {
           throw new Error('どんぐりが見つかりませんでした。');
         }
         if(
           lastLine === 'あなたのチームは動きを使い果たしました。しばらくお待ちください。' ||
-          lastLine === 'ng<>too fast'
+          lastLine === 'ng<>too fast' ||
+          lastLine === '武器と防具を装備しなければなりません。' ||
+          lastLine === '最初にチームに参加する必要があります。'
         ) {
           throw new Error(lastLine);
         }
@@ -1346,21 +1495,26 @@
         const p = pTemplate.cloneNode();
         p.textContent = `(${row}, ${col}) ${lastLine}`;
         arenaResult.prepend(p);
+        rangeAttackQueue.shift();
       } catch (e) {
         const p = pTemplate.cloneNode();
-        p.textContent = `(${row}, ${col}) [中止] ${e}`;
+        p.textContent = `(${row}, ${col}) [中断] ${e}`;
         arenaResult.prepend(p);
         errorOccurred = true;
         break;
       }
-      if (i !== selectedCells.length-1) {
-        await new Promise(resolve => setTimeout(resolve, 2000));
+      if (rangeAttackQueue.length > 0) {
+        await new Promise(resolve => setTimeout(resolve, 1500));
       }
+      cell.style.borderColor = cell.classList.contains('selected') ? '#f64' : '#ccc';
     }
     if(!errorOccurred) {
       const p = pTemplate.cloneNode();
       p.textContent = `完了`;
       arenaResult.prepend(p);
+      return true;
+    } else {
+      return false;
     }
   }
 
@@ -1486,7 +1640,8 @@
       ],
       retry: [
         'あなたのチームは動きを使い果たしました。しばらくお待ちください。',
-        'ng<>too fast'
+        'ng<>too fast',
+        'res.ng'
       ],
       reset: [
         'No region',
@@ -1505,8 +1660,8 @@
         body: body,
         headers: headers
       })
-        .then(response => response.ok ? response.text() : Promise.reject(`res.ng[${response.status}]`))
-        .catch(error => logMessage(regions[index], '', `Error: ${error}`))
+        .then(response => response.ok ? response.text() : Promise.reject(`res.ng [${response.status}]`))
+        .catch(error => error)
         .then(text => {
           const lastLine = text.trim().split('\n').pop();
           let message = lastLine;
@@ -1525,7 +1680,7 @@
             return;
           } else if (text.startsWith('アリーナチャレンジ開始')){
             message = '[成功] ' + lastLine;
-          } else if (text.startsWith('<html')){
+          } else if (lastLine.length > 100) {
             message = 'どんぐりシステム';
             nextStep = [index, 2];
           }
