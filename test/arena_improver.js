@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         donguri arena assist tool
-// @version      1.1e_test2
+// @version      1.1e_test3
 // @description  fix arena ui and add functions
 // @author       7234e634
 // @match        https://donguri.5ch.net/teambattle
@@ -752,10 +752,10 @@
       select.style.lineHeight = '1';
       select.style.width = 'fit-content';
       const wrapper = document.createElement('div');
-      label.style.display = 'flex';
-      label.style.justifyContent = 'space-between';
-      label.style.whiteSpace = 'nowrap';
-      label.style.padding = '0 2px';
+      wrapper.style.display = 'flex';
+      wrapper.style.justifyContent = 'space-between';
+      wrapper.style.whiteSpace = 'nowrap';
+      wrapper.style.padding = '0 2px';
       const span = document.createElement('span');
       span.style.flexGrow = '1';
       span.style.overflowX = 'auto';
