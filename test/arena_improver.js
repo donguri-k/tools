@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         donguri arena assist tool
-// @version      1.1e_test
+// @version      1.1e_test2
 // @description  fix arena ui and add functions
 // @author       7234e634
 // @match        https://donguri.5ch.net/teambattle
@@ -751,7 +751,7 @@
       select.style.color = '#000';
       select.style.lineHeight = '1';
       select.style.width = 'fit-content';
-      const label = document.createElement('label');
+      const wrapper = document.createElement('div');
       label.style.display = 'flex';
       label.style.justifyContent = 'space-between';
       label.style.whiteSpace = 'nowrap';
@@ -773,12 +773,12 @@
             .forEach(([key, value]) => select.add(new Option(value, key)));
         }
       }
-      function labelWrapping (text, elm, parent){
-        const label_ = label.cloneNode();
+      function wrappingItems (text, elm, parent){
+        const wrapper_ = wrapper.cloneNode();
         const span_ = span.cloneNode();
         span_.textContent = text;
-        label_.append(span_, elm);
-        parent.append(label_);
+        wrapper_.append(span_, elm);
+        parent.append(wrapper_);
       }
       const widthUnit = select.cloneNode();
       const heightUnit = select.cloneNode();
@@ -885,19 +885,19 @@
           elm.dataset.setting = key;
           elm.dataset.type = 'value';
           createOptions(elm, item.options);
-          labelWrapping(item.text, elm, item.parent);
+          wrappingItems(item.text, elm, item.parent);
         } else if (item.type === 'width') {
           const elm = document.createElement('div');
           elm.dataset.setting = key;
           elm.dataset.type = 'unit';
           elm.append(number.cloneNode(), widthUnit.cloneNode(true));
-          labelWrapping(item.text, elm, item.parent);
+          wrappingItems(item.text, elm, item.parent);
         } else if (item.type === 'height') {
           const elm = document.createElement('div');
           elm.dataset.setting = key;
           elm.dataset.type = 'unit';
           elm.append(number.cloneNode(), heightUnit.cloneNode(true));
-          labelWrapping(item.text, elm, item.parent);
+          wrappingItems(item.text, elm, item.parent);
         }
       })
 
