@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         donguri arena assist tool
-// @version      1.1e
+// @version      1.1f
 // @description  fix arena ui and add functions
 // @author       7234e634
 // @match        https://donguri.5ch.net/teambattle
@@ -413,9 +413,9 @@
   (()=>{
     arenaField.style.bottom = settings.arenaFieldBottom ? settings.arenaFieldBottom : '4vh';
     if (settings.arenaFieldPosition === 'right') {
-      arenaField.style.left = settings.arenaFieldPositionLength || 'auto';
+      arenaField.style.left = 'auto';
     } else {
-      arenaField.style.left = settings.arenaFieldPositionLength || '0';
+      arenaField.style.marginLeft = settings.arenaFieldPositionLength || '0';
     }
 
     if (settings.arenaFieldWidth) {
@@ -913,7 +913,7 @@
       const link = document.createElement('a');
       link.style.color = '#666';
       link.style.textDecoration = 'underline';
-      link.textContent = 'arena assist tool - v1.1e';
+      link.textContent = 'arena assist tool - v1.1f';
       link.href = 'https://donguri-k.github.io/tools/arena-assist-tool';
       link.target = '_blank';
       const author = document.createElement('input');
