@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         donguri arena assist tool
-// @version      1.1d
+// @version      1.1e
 // @description  fix arena ui and add functions
 // @author       7234e634
 // @match        https://donguri.5ch.net/teambattle
@@ -30,6 +30,9 @@
   }
 
   const vw = Math.min(document.documentElement.clientWidth, window.innerWidth || 0);
+  const vh = Math.min(document.documentElement.clientHeight, window.innerHeight || 0);
+
+  const settings = JSON.parse(localStorage.getItem('aat_settings')) || {};
 
   const header = document.querySelector('header');
   header.style.marginTop = '100px';
@@ -39,7 +42,32 @@
   toolbar.style.zIndex = '1';
   toolbar.style.background = '#fff';
   toolbar.style.border = 'solid 1px #000';
-  toolbar.style.marginLeft = '-8px';
+  (()=>{ // settings.toolbarPosition
+    const position = settings.toolbarPosition || 'left';
+    let distance = settings.toolbarPositionLength || '0px';
+
+    const match = distance.match(/^(\d+)(px|%|vw)?$/);
+    let value = match ? parseFloat(match[1]) : 0;
+    let unit = match ? match[2] || 'px' : 'px';
+
+    const maxPx = vw / 3;
+    const maxPercent = 33;
+    const maxVw = 33;
+    if (unit === 'px') value = Math.min(value, maxPx);
+    else if (unit === '%') value = Math.min(value, maxPercent);
+    else if (unit === 'vw') value = Math.min(value, maxVw);
+
+    distance = `${value}${unit}`;
+
+    if (position === 'left') {
+      toolbar.style.left = distance;
+    } else if (position === 'right') {
+      toolbar.style.right = distance;
+    } else if (position === 'center') {
+      toolbar.style.left = distance;
+      toolbar.style.right = distance;
+    }
+  })();
   header.querySelector('h4').style.display = 'none';
   header.append(toolbar);
   const progressBarContainer = document.createElement('div');
@@ -138,8 +166,14 @@
 
       const skipAreaInfoButton = subButton.cloneNode();
       skipAreaInfoButton.innerText = 'セル情報\nスキップ';
-      skipAreaInfoButton.style.background = '#888';
       skipAreaInfoButton.style.color = '#fff';
+      if (settings.skipArenaInfo) {
+        skipAreaInfoButton.style.background = '#46f';
+        shouldSkipAreaInfo = true;
+      } else {
+        skipAreaInfoButton.style.background = '#888';
+        shouldSkipAreaInfo = false;
+      }
       skipAreaInfoButton.addEventListener('click', ()=>{
         if(shouldSkipAreaInfo) {
           skipAreaInfoButton.style.background = '#888';
@@ -148,6 +182,8 @@
           skipAreaInfoButton.style.background = '#46f';
           shouldSkipAreaInfo = true;
         }
+        settings.skipArenaInfo = shouldSkipAreaInfo;
+        localStorage.setItem('aat_settings', JSON.stringify(settings));
       })
 
       const autoJoinButton = subButton.cloneNode();
@@ -200,7 +236,7 @@
         closeButton.addEventListener('click', ()=>{
           autoJoinDialog.close();
         })
-        closeButton.autofocus = true;
+        closeButton.autofocus = true; // inputへのオートフォーカス阻止
         const p = document.createElement('p');
         p.textContent = 'この画面を開いたままにしておくこと。最短600秒';
         p.style.margin = '0';
@@ -210,7 +246,7 @@
       })();
 
       const settingsButton = subButton.cloneNode();
-      settingsButton.textContent = '設定(まだ)';
+      settingsButton.textContent = '設定';
       settingsButton.style.background = '#ffb300';
       settingsButton.style.color = '#000';
       settingsButton.addEventListener('click', ()=>{
@@ -370,13 +406,26 @@
   const arenaField = document.createElement('dialog');
   arenaField.style.position = 'fixed';
   arenaField.style.width = '100%';
-  arenaField.style.bottom = '4vh';
   arenaField.style.background = 'none';
   arenaField.style.background = '#fff';
   arenaField.style.color = '#000';
   arenaField.style.border = 'solid 1px #000';
-  arenaField.style.marginLeft = '1px';
-  arenaField.style.maxWidth = '480px';
+  (()=>{
+    arenaField.style.bottom = settings.arenaFieldBottom ? settings.arenaFieldBottom : '4vh';
+    if (settings.arenaFieldPosition === 'right') {
+      arenaField.style.left = settings.arenaFieldPositionLength || 'auto';
+    } else {
+      arenaField.style.left = settings.arenaFieldPositionLength || '0';
+    }
+
+    if (settings.arenaFieldWidth) {
+      arenaField.style.width = settings.arenaFieldWidth;
+      arenaField.style.maxWidth = '100vw';
+    } else {
+      arenaField.style.maxWidth = '480px';
+    }
+  })();
+
   const arenaModDialog = document.createElement('dialog');
   let wood, steel
 
@@ -387,6 +436,7 @@
 
     const button = document.createElement('button');
     button.type = 'button';
+    button.style.fontSize = '90%';
     button.style.whiteSpace = 'nowrap';
 
     if (vw < 768) {
@@ -510,12 +560,8 @@
 
   const arenaResult = document.createElement('dialog');
   arenaResult.style.position = 'fixed';
-  arenaResult.style.width = '60%';
-  arenaResult.style.bottom = '4vh';
+  arenaResult.style.bottom = settings.arenaResultBottom ? settings.arenaResultBottom : '4vh';
   arenaResult.style.left = 'auto';
-  arenaResult.style.height = '60vh';
-  arenaResult.style.maxWidth = '480px';
-  arenaResult.style.maxHeight = '640px';
   arenaResult.style.background = '#fff';
   arenaResult.style.color = '#000';
   arenaResult.style.fontSize = '70%';
@@ -524,6 +570,29 @@
   arenaResult.style.textAlign = 'left';
   arenaResult.style.overflowY = 'auto';
   arenaResult.style.zIndex = '1';
+  (()=>{
+    if (settings.arenaResultHeight) {
+      arenaResult.style.height = settings.arenaResultHeight;
+      arenaResult.style.maxHeight = '100vh';
+    } else {
+      arenaResult.style.height = '60vh';
+      arenaResult.style.maxHeight = '640px';
+    }
+
+    if (settings.arenaResultWidth) {
+      arenaResult.style.width = settings.arenaResultWidth;
+      arenaResult.style.maxWidth = '100vw';
+    } else {
+      arenaResult.style.width = '60%';
+      arenaResult.style.maxWidth = '480px';
+    }
+
+    if (settings.arenaResultPosition === 'left') {
+      arenaResult.style.left = settings.arenaResultPositionLength || '0';
+    } else {
+      arenaResult.style.left = settings.arenaResultPositionLength || 'auto';
+    }
+  })();
   window.addEventListener('mousedown', (event) => {
     if (!arenaResult.contains(event.target) && !rangeAttackProcessing) {
       arenaResult.close();
@@ -581,15 +650,260 @@
     container.style.height = '100%';
     container.style.color = '#000';
 
+    const header = document.createElement('div');
+    header.style.display = 'flex';
+    
     const h2 = document.createElement('h2');
-    h2.textContent = 'メニュー・設定'
-    h2.style.fontSize = '1rem';
+    h2.textContent = '設定'
+    h2.style.fontSize = '1.2rem';
     h2.style.margin = '2px';
+
+    const closeButton = button.cloneNode();
+    closeButton.textContent = '×';
+    closeButton.style.marginLeft = 'auto';
+    closeButton.style.background = 'none';
+    closeButton.style.border = 'none';
+    closeButton.style.height = '40px';
+    closeButton.style.width = '40px';
+    closeButton.style.fontSize = '32px';
+    closeButton.style.lineHeight = '1';
+    closeButton.addEventListener('click', ()=>{
+      settingsDialog.close();
+    })
 
     const settingsMenu = document.createElement('div');
     settingsMenu.style.flexGrow = '1';
     settingsMenu.style.overflowY = 'auto';
-    settingsMenu.textContent = '(ここに設定項目を追加予定)';
+    settingsMenu.style.overflowX = 'hidden';
+
+    const settingsButtons = document.createElement('div');
+    settingsButtons.style.display = 'flex';
+
+    (()=>{
+      const saveButton = button.cloneNode();
+      saveButton.textContent = '保存';
+      saveButton.addEventListener('click', ()=>{
+        const settingElements = settingsMenu.querySelectorAll('[data-setting]');
+        settingElements.forEach(elm => {
+          if (elm.dataset.type === 'value') {
+            if(elm.value !== '') {
+              settings[elm.dataset.setting] = elm.value;
+            } else {
+              settings[elm.dataset.setting] = null;
+            }
+          }
+          if (elm.dataset.type === 'unit') {
+            const input = elm.querySelector('input');
+            const unit = elm.querySelector('select');
+            if(input.value !== '') {
+              settings[elm.dataset.setting] = input.value + unit.value;
+            } else {
+              settings[elm.dataset.setting] = null;
+            }
+          }
+        })
+        localStorage.setItem('aat_settings', JSON.stringify(settings));
+        location.reload();
+      })
+
+      const cancelButton = button.cloneNode();
+      cancelButton.textContent = 'キャンセル';
+      cancelButton.addEventListener('click', ()=>{
+        refreshSettings();
+        settingsDialog.close();
+      })
+      function refreshSettings (){
+        const settingElements = settingsMenu.querySelectorAll('[data-setting]');
+        settingElements.forEach(elm => {
+          if (elm.dataset.type === 'value') {
+            if (settings[elm.dataset.setting]) elm.value = settings[elm.dataset.setting];
+            else if (elm.tagName === 'SELECT') elm.selectedIndex = 0;
+            else elm.value = '';
+          }
+          if (elm.dataset.type === 'unit') {
+            const value = settings[elm.dataset.setting];
+            const input = elm.querySelector('input');
+            const unit = elm.querySelector('select');
+            if (value) {
+              const match = value.match(/(\d+)(\D+)/);
+              input.value = match[1];
+              unit.value = match[2];
+            } else {
+              input.value = '';
+              unit.selectedIndex = 0;
+            }
+          }
+        })
+      }
+      settingsButtons.append(saveButton, cancelButton);
+
+      const details = document.createElement('details');
+      details.style.background = 'none';
+      details.style.color = '#000';
+      details.style.padding = '0';
+      details.style.margin = '2px';
+      details.style.border = 'none';
+      details.style.display = 'flex';
+      details.style.flexDirection = 'column';
+      details.open = true;
+      const select = document.createElement('select');
+      select.style.background = '#ddd';
+      select.style.color = '#000';
+      select.style.lineHeight = '1';
+      select.style.width = 'fit-content';
+      const wrapper = document.createElement('div');
+      wrapper.style.display = 'flex';
+      wrapper.style.justifyContent = 'space-between';
+      wrapper.style.whiteSpace = 'nowrap';
+      wrapper.style.padding = '0 2px';
+      const span = document.createElement('span');
+      span.style.flexGrow = '1';
+      span.style.overflowX = 'auto';
+
+      function createSummary (text, elm) {
+        const summary = document.createElement('summary');
+        summary.textContent = text;
+        elm.append(summary);
+      }
+      function createOptions (select, items){
+        if (Array.isArray(items)) {
+          items.forEach(value => select.add(new Option(value, value)));
+        } else if (typeof items === 'object' && items !== null) {
+          Object.entries(items)
+            .forEach(([key, value]) => select.add(new Option(value, key)));
+        }
+      }
+      function wrappingItems (text, elm, parent){
+        const wrapper_ = wrapper.cloneNode();
+        const span_ = span.cloneNode();
+        span_.textContent = text;
+        wrapper_.append(span_, elm);
+        parent.append(wrapper_);
+      }
+      const widthUnit = select.cloneNode();
+      const heightUnit = select.cloneNode();
+      createOptions(widthUnit, ['px','%','vw']);
+      createOptions(heightUnit, ['px','%','vh']);
+      const number = document.createElement('input');
+      number.type = 'number';
+      number.style.background = '#ddd';
+      number.style.color = '#000';
+      number.style.height = '2em';
+      number.style.width = '4em';
+      
+      const toolbar = details.cloneNode();
+      createSummary('toolbar', toolbar);
+
+      const arenaResult = details.cloneNode();
+      createSummary('アリーナログ', arenaResult);
+      const arenaField = details.cloneNode();
+      createSummary('アリーナ情報', arenaField);
+
+      const settingItems = {
+        toolbarPosition: {
+          text: '位置:',
+          type: 'select',
+          options: {
+            left: '左寄せ',
+            right: '右寄せ',
+            center: '中央寄せ'
+          },
+          parent: toolbar
+        },
+        toolbarPositionLength: {
+          text: '端の距離:',
+          type: 'width',
+          parent: toolbar
+        },
+        arenaResultScrollPosition: {
+          text: 'スクロール位置:',
+          type: 'select',
+          options: {
+            top: '上',
+            bottom: '下'
+          },
+          parent: arenaResult
+        },
+        arenaResultBottom: {
+          text: '下部の距離:',
+          type: 'height',
+          parent: arenaResult
+        },
+        arenaResultPosition: {
+          text: '位置:',
+          type: 'select',
+          options: {
+            right: '右寄せ',
+            left: '左寄せ'
+          },
+          parent: arenaResult
+        },
+        arenaResultPositionLength: {
+          text: '左端からの距離:',
+          type: 'width',
+          parent: arenaResult
+        },
+        arenaResultHeight: {
+          text: 'ログの高さ:',
+          type: 'height',
+          parent: arenaResult
+        },
+        arenaResultWidth: {
+          text: 'ログの横幅:',
+          type: 'width',
+          parent: arenaResult
+        },
+        arenaFieldBottom: {
+          text: '下部の距離:',
+          type: 'height',
+          parent: arenaField
+        },
+        arenaFieldPosition: {
+          text: '位置:',
+          type: 'select',
+          options: {
+            left: '左寄せ',
+            right: '右寄せ'
+          },
+          parent: arenaField
+        },
+        arenaFieldPositionLength: {
+          text: '左端からの距離:',
+          type: 'width',
+          parent: arenaField
+        },
+        arenaFieldWidth: {
+          text: '横幅:',
+          type: 'width',
+          parent: arenaField
+        }
+      }
+
+      Object.entries(settingItems).forEach(([key,item]) => {
+        if (item.type === 'select') {
+          const elm = select.cloneNode();
+          elm.dataset.setting = key;
+          elm.dataset.type = 'value';
+          createOptions(elm, item.options);
+          wrappingItems(item.text, elm, item.parent);
+        } else if (item.type === 'width') {
+          const elm = document.createElement('div');
+          elm.dataset.setting = key;
+          elm.dataset.type = 'unit';
+          elm.append(number.cloneNode(), widthUnit.cloneNode(true));
+          wrappingItems(item.text, elm, item.parent);
+        } else if (item.type === 'height') {
+          const elm = document.createElement('div');
+          elm.dataset.setting = key;
+          elm.dataset.type = 'unit';
+          elm.append(number.cloneNode(), heightUnit.cloneNode(true));
+          wrappingItems(item.text, elm, item.parent);
+        }
+      })
+
+      settingsMenu.append(toolbar, arenaResult, arenaField);
+      refreshSettings();
+    })();
     
     const footer = document.createElement('div');
     footer.style.fontSize = '80%';
@@ -599,7 +913,7 @@
       const link = document.createElement('a');
       link.style.color = '#666';
       link.style.textDecoration = 'underline';
-      link.textContent = 'arena assist tool - v1.1d';
+      link.textContent = 'arena assist tool - v1.1e';
       link.href = 'https://donguri-k.github.io/tools/arena-assist-tool';
       link.target = '_blank';
       const author = document.createElement('input');
@@ -617,7 +931,8 @@
       footer.append(link, author);
     })();
 
-    container.append(h2, settingsMenu, footer)
+    header.append(h2, closeButton);
+    container.append(header, settingsButtons, settingsMenu, footer)
     settingsDialog.append(container);
   })();
   
@@ -678,6 +993,9 @@
       localStorage.removeItem('current_equip');
       const stat = document.querySelector('.equip-preset-stat');
       stat.textContent = '現在の装備情報を初期化';
+      weaponTable = null;
+      armorTable = null;
+      necklaceTable = null;
     })
 
     presetList.addEventListener('click', (event)=>{
@@ -771,7 +1089,7 @@
           if(data) {
             const json = JSON.parse(data);
             const formattedString = Object.entries(json)
-              .map(([key, value]) => {return `  "${key}": ${JSON.stringify(value)}`;})
+              .map(([key, value]) => {return `  "${key.replace(/"/g,'\\"')}": ${JSON.stringify(value)}`;})
               .join(',\n');
             textarea.value = `{\n${formattedString}\n}`;
           }
@@ -929,7 +1247,7 @@
       dialog.append(presetNameInput, confirmButton, cancelButton, p);
       equipField.append(dialog);
       registerButton.addEventListener('click', ()=>{
-        if(!selectedEquips.id[0] || !selectedEquips.id[1]) {
+        if(!selectedEquips.id[0] && !selectedEquips.id[1] && !selectedEquips.id[2]) {
           alert('装備が未選択です');
           return;
         }
@@ -1113,12 +1431,12 @@
         } else if (!titles.every(title => title === 'アイテムバッグ')) {
           throw new Error('装備エラー');
         }
+        stat.textContent = '完了: ' + presetName;
+        localStorage.setItem('current_equip', JSON.stringify(equipPresets[presetName].id));  
       } catch (e) {
         stat.textContent = e;
         localStorage.removeItem('current_equip');
-      } 
-      stat.textContent = '完了: ' + presetName;
-      localStorage.setItem('current_equip', JSON.stringify(equipPresets[presetName].id));
+      }
     }
     function removePresetItems(presetName) {
       const userConfirmed = confirm(presetName + ' を削除しますか？');
@@ -1232,7 +1550,6 @@
       newTables.forEach((table, i) => {
         tables[i].replaceWith(table);
       });
-  
       console.log(refreshedCells);
       return refreshedCells;
     } catch (e) {
@@ -1242,7 +1559,6 @@
   
   async function fetchAreaInfo(refreshAll){
     const refreshedCells = await refreshArenaInfo();
-    console.log(refreshedCells);
     grid.style.gridTemplateRows = grid.style.gridTemplateRows.replace('35px','65px');
     grid.style.gridTemplateColumns = grid.style.gridTemplateColumns.replace('35px','105px');
     grid.parentNode.style.height = null;
@@ -1404,17 +1720,8 @@
         throw new Error('/teamchallenge res.ng');
       }
       const text = await response.text();
-      arenaResult.style.display = 'block';
       arenaResult.innerText = text;
-      arenaResult.scrollTop = 0;
-      arenaResult.style.display = '';
 
-      /*
-      arenaResult.style.display = 'block';
-      arenaResult.innerText = text;
-      arenaResult.scrollTop = arenaResult.scrollHeight;
-      arenaResult.style.display = '';
-      */
       if(text.includes('\n')) {
         const lastLine = text.trim().split('\n').pop();
         lastLine + '\n' + text;
@@ -1425,7 +1732,18 @@
         p.style.margin = '0';
         arenaResult.prepend(p);
       }
+
       arenaResult.show();
+      // arenaResult.show();のあとでsetTimeoutを使用しないと位置がずれる
+      setTimeout(() => {
+        if (settings.arenaResultScrollPosition === 'bottom') {
+          arenaResult.scrollTop = arenaResult.scrollHeight;
+        } else {
+          arenaResult.scrollTop = 0;
+        }
+      }, 0);
+      arenaResult.style.display = '';
+
     } catch (e) {
       arenaResult.innerText = e;
       arenaResult.show();
@@ -1532,44 +1850,47 @@
 
     if(type === 'cond') {
       cells.sort((a, b) => {
-        const condA = a.querySelector('p')?.textContent;
-        const condB = b.querySelector('p')?.textContent;
-        if(!condA || !condB) return;
+        const condA = a.querySelector('p')?.textContent;;
+        const condB = b.querySelector('p')?.textContent;;
+        if (!condA || !condB) return 0;
+      
         const splitA = condA.split('-');
         const splitB = condB.split('-');
-        
+      
         const isCompositeA = splitA.length > 1;
         const isCompositeB = splitB.length > 1;
-        
-        const order = ['N','R','SR','SSR','UR'];
-        // '-'を含むものを後 
+      
+        const order = ['N', 'R', 'SR', 'SSR', 'UR'];
+      
+        // '-' の後のランクを取得（ない場合はそのまま）
+        const baseA = isCompositeA ? splitA[1] : condA;
+        const baseB = isCompositeB ? splitB[1] : condB;
+      
+        const indexA = order.indexOf(baseA.replace(/だけ|e/g, ''));
+        const indexB = order.indexOf(baseB.replace(/だけ|e/g, ''));
+
+        // ランク順
+        if (indexA !== indexB) return indexA - indexB;
+      
+        // 'だけ' > 'e' > 'だけe'
+        const flag = s => 
+          (s.includes('だけ') ? 1 : 0) + (s.includes('e') ? 2 : 0);
+        const flagA = flag(condA);
+        const flagB = flag(condB);
+
+        if(flagA !== flagB) return flagA - flagB;
+
+        // 同じランク内で '-' を含まないものを優先
         if (isCompositeA !== isCompositeB) return isCompositeA - isCompositeB;
+      
         if (isCompositeA) {
-          // 後のランク優先で比較
-          const backA = splitA[1];
-          const backB = splitB[1];
-          const indexBackA = order.indexOf(backA);
-          const indexBackB = order.indexOf(backB);
-          if (indexBackA !== indexBackB) return indexBackA - indexBackB;
-          
+          // '-' の前のランクで比較
           const frontA = splitA[0];
           const frontB = splitB[0];
           const indexFrontA = order.indexOf(frontA);
           const indexFrontB = order.indexOf(frontB);
-          return indexFrontA - indexFrontB;
+          if (indexFrontA !== indexFrontB) return indexFrontA - indexFrontB;
         }
-        // 単一
-        const baseA = condA.replace(/だけ|e/g, '');
-        const baseB = condB.replace(/だけ|e/g, ''); 
-        const indexA = order.indexOf(baseA);
-        const indexB = order.indexOf(baseB);
-        
-        if (indexA !== indexB) return indexA - indexB;
-        
-        const flag = s => 
-          (s.includes('だけ') ? 1 : 0) + (s.includes('e') ? 2 : 0);
-        
-        return flag(condA) - flag(condB);
       });
     }
     grid.innerHTML = '';
