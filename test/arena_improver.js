@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         donguri arena assist tool
-// @version      1.1e_test3
+// @version      1.1g
 // @description  fix arena ui and add functions
 // @author       7234e634
 // @match        https://donguri.5ch.net/teambattle
@@ -229,6 +229,12 @@
         intervalInput.style.background = '#fff';
         intervalInput.style.color = '#000';
         label.append(intervalInput, '秒');
+        intervalInput.value = settings.autoJoinInterval || '';
+        intervalInput.addEventListener('input', ()=>{
+          const interval = intervalInput.valueAsNumber;
+          settings.autoJoinInterval = interval > 600 ? interval : 600;
+          localStorage.setItem('aat_settings', JSON.stringify(settings))
+        })
     
         const closeButton = document.createElement('button');
         closeButton.style.fontSize = '100%';
@@ -405,17 +411,18 @@
 
   const arenaField = document.createElement('dialog');
   arenaField.style.position = 'fixed';
-  arenaField.style.width = '100%';
-  arenaField.style.background = 'none';
   arenaField.style.background = '#fff';
   arenaField.style.color = '#000';
   arenaField.style.border = 'solid 1px #000';
+  if(vw < 768) arenaField.style.fontSize = '85%';
   (()=>{
     arenaField.style.bottom = settings.arenaFieldBottom ? settings.arenaFieldBottom : '4vh';
-    if (settings.arenaFieldPosition === 'right') {
-      arenaField.style.left = settings.arenaFieldPositionLength || 'auto';
-    } else {
+    if (settings.arenaFieldPosition === 'left') {
+      arenaField.style.right = 'auto';
       arenaField.style.left = settings.arenaFieldPositionLength || '0';
+    } else if (settings.arenaFieldPosition === 'right') {
+      arenaField.style.left = 'auto';
+      arenaField.style.right = settings.arenaFieldPositionLength || '0';
     }
 
     if (settings.arenaFieldWidth) {
@@ -623,16 +630,36 @@
   const settingsDialog = document.createElement('dialog');
   settingsDialog.style.position = 'fixed';
   settingsDialog.style.top = '0';
-  settingsDialog.style.left = 'auto';
   settingsDialog.style.background = '#f0f0f0';
   settingsDialog.style.border = 'solid 1px #000';
-  settingsDialog.style.height = '96vh';
-  settingsDialog.style.width = '400px';
-  settingsDialog.style.maxWidth = '75vw';
   settingsDialog.style.padding = '2px';
   settingsDialog.style.margin = '0';
   settingsDialog.style.zIndex = '2';
   settingsDialog.style.textAlign = 'left';
+  (()=>{
+    if (settings.settingsPanelPosition === 'left') {
+      settingsDialog.style.left = '0';
+    } else {
+      settingsDialog.style.left = 'auto';
+    }
+
+    if (settings.settingsPanelWidth) {
+      settingsDialog.style.width = settings.settingsPanelWidth;
+      settingsDialog.style.minWidth = '20vw';
+      settingsDialog.style.maxWidth = '100vw';
+    } else {
+      settingsDialog.style.width = '400px';
+      settingsDialog.style.maxWidth = '75vw';
+    }
+
+    if (settings.settingsPanelHeight) {
+      settingsDialog.style.height = settings.settingsPanelHeight;
+      settingsDialog.style.maxHeight = '100vh';
+      settingsDialog.style.minHeight = '20vw';
+    } else {
+      settingsDialog.style.height = '96vh';
+    }
+  })();
   (()=>{
     const button = document.createElement('button');
     button.type = 'button';
@@ -643,6 +670,8 @@
     button.style.margin = '2px';
     button.style.height = '42px';
     button.style.lineHeight = '1';
+    button.style.whiteSpace = 'nowrap';
+    button.style.overflowX = 'hidden';
 
     const container = document.createElement('div');
     container.style.display = 'flex';
@@ -737,15 +766,18 @@
       }
       settingsButtons.append(saveButton, cancelButton);
 
-      const details = document.createElement('details');
-      details.style.background = 'none';
-      details.style.color = '#000';
-      details.style.padding = '0';
-      details.style.margin = '2px';
-      details.style.border = 'none';
-      details.style.display = 'flex';
-      details.style.flexDirection = 'column';
-      details.open = true;
+      const container = document.createElement('div');
+      container.style.background = 'none';
+      container.style.color = '#000';
+      container.style.padding = '0';
+      container.style.margin = '2px';
+      container.style.border = 'none';
+      container.style.display = 'flex';
+      container.style.flexDirection = 'column';
+      const h3 = document.createElement('h3');
+      h3.style.margin = '8px 0';
+      h3.style.fontSize = '1.1em';
+      h3.style.textDecoration = 'underline';
       const select = document.createElement('select');
       select.style.background = '#ddd';
       select.style.color = '#000';
@@ -760,10 +792,10 @@
       span.style.flexGrow = '1';
       span.style.overflowX = 'auto';
 
-      function createSummary (text, elm) {
-        const summary = document.createElement('summary');
-        summary.textContent = text;
-        elm.append(summary);
+      function addHeader (text, elm) {
+        const header = h3.cloneNode();
+        header.textContent = text;
+        elm.append(header);
       }
       function createOptions (select, items){
         if (Array.isArray(items)) {
@@ -791,13 +823,18 @@
       number.style.height = '2em';
       number.style.width = '4em';
       
-      const toolbar = details.cloneNode();
-      createSummary('toolbar', toolbar);
-
-      const arenaResult = details.cloneNode();
-      createSummary('アリーナログ', arenaResult);
-      const arenaField = details.cloneNode();
-      createSummary('アリーナ情報', arenaField);
+      const toolbar = container.cloneNode();
+      addHeader('toolbar', toolbar);
+      const arenaResult = container.cloneNode();
+      addHeader('アリーナログ', arenaResult);
+      const arenaField = container.cloneNode();
+      addHeader('アリーナ情報', arenaField);
+      const grid = container.cloneNode();
+      addHeader('グリッド', grid);
+      const settingsPanel = container.cloneNode();
+      addHeader('設定パネル', settingsPanel);
+      const equipPanel = container.cloneNode();
+      addHeader('装備パネル', equipPanel);
 
       const settingItems = {
         toolbarPosition: {
@@ -863,12 +900,13 @@
           type: 'select',
           options: {
             left: '左寄せ',
-            right: '右寄せ'
+            right: '右寄せ',
+            center: '中央寄せ'
           },
           parent: arenaField
         },
         arenaFieldPositionLength: {
-          text: '左端からの距離:',
+          text: '端からの距離:',
           type: 'width',
           parent: arenaField
         },
@@ -876,6 +914,49 @@
           text: '横幅:',
           type: 'width',
           parent: arenaField
+        },
+        gridColumns: {
+          text: '1行の最大セル数:',
+          type: 'number',
+          parent: grid
+        },
+        settingsPanelPosition: {
+          text: '位置',
+          type: 'select',
+          options: {
+            right: '右寄せ',
+            left: '左寄せ'
+          },
+          parent: settingsPanel
+        },
+        settingsPanelHeight: {
+          text: '高さ',
+          type: 'height',
+          parent: settingsPanel
+        },
+        settingsPanelWidth: {
+          text: '横幅',
+          type: 'width',
+          parent: settingsPanel
+        },
+        equipPanelPosition: {
+          text: '位置',
+          type: 'select',
+          options: {
+            right: '右寄せ',
+            left: '左寄せ'
+          },
+          parent: equipPanel
+        },
+        equipPanelHeight: {
+          text: '高さ',
+          type: 'height',
+          parent: equipPanel
+        },
+        equipPanelWidth: {
+          text: '横幅',
+          type: 'width',
+          parent: equipPanel
         }
       }
 
@@ -885,6 +966,11 @@
           elm.dataset.setting = key;
           elm.dataset.type = 'value';
           createOptions(elm, item.options);
+          wrappingItems(item.text, elm, item.parent);
+        } else if (item.type === 'number') {
+          const elm = number.cloneNode();
+          elm.dataset.setting = key;
+          elm.dataset.type = 'value';
           wrappingItems(item.text, elm, item.parent);
         } else if (item.type === 'width') {
           const elm = document.createElement('div');
@@ -901,7 +987,7 @@
         }
       })
 
-      settingsMenu.append(toolbar, arenaResult, arenaField);
+      settingsMenu.append(toolbar, arenaResult, arenaField, grid, settingsPanel, equipPanel);
       refreshSettings();
     })();
     
@@ -913,7 +999,7 @@
       const link = document.createElement('a');
       link.style.color = '#666';
       link.style.textDecoration = 'underline';
-      link.textContent = 'arena assist tool - v1.1e';
+      link.textContent = 'arena assist tool - v1.1g';
       link.href = 'https://donguri-k.github.io/tools/arena-assist-tool';
       link.target = '_blank';
       const author = document.createElement('input');
@@ -942,17 +1028,37 @@
   const panel = document.createElement('div');
   panel.style.position = 'fixed';
   panel.style.top = '0';
-  panel.style.right = '0';
   panel.style.background = '#f0f0f0';
   panel.style.border = 'solid 1px #000';
-  panel.style.height = '96vh';
-  panel.style.width = '400px';
-  panel.style.maxWidth = '75vw';
   panel.style.padding = '2px';
   panel.style.zIndex = '1';
   panel.style.textAlign = 'left';
   panel.style.display = 'none';
   panel.style.flexDirection = 'column';
+  (()=>{
+    if (settings.equipPanelPosition === 'left') {
+      panel.style.left = '0';
+    } else {
+      panel.style.right = '0';
+    }
+  
+    if (settings.equipPanelWidth) {
+      panel.style.width = settings.equipPanelWidth;
+      panel.style.minWidth = '20vw';
+      panel.style.maxWidth = '100vw';
+    } else {
+      panel.style.width = '400px';
+      panel.style.maxWidth = '75vw';
+    }
+  
+    if (settings.equipPanelHeight) {
+      panel.style.height = settings.equipPanelHeight;
+      panel.style.maxHeight = '100vh';
+      panel.style.minHeight = '20vw';
+    } else {
+      panel.style.height = '96vh';
+    }
+  })();  
 
   (()=>{
     const input = document.createElement('input');
@@ -969,7 +1075,10 @@
     button.style.background = '#ccc';
     button.style.color = '#000';
     button.style.margin = '2px';
-    button.style.height = '42px';
+    button.style.width = '6em';
+    button.style.fontSize = '65%';
+    button.style.whiteSpace = 'nowrap';
+    button.style.overflow = 'hidden';
     button.style.lineHeight = '1';
 
     let currentMode = 'equip';
@@ -1051,10 +1160,7 @@
       editButton.dataset.mode = 'edit';
       */
       const backupButton = button.cloneNode();
-      backupButton.textContent = 'バックアップ';
-      backupButton.style.height = '42px';
-      backupButton.style.lineHeight = '1';
-      backupButton.style.fontSize = '80%';
+      backupButton.innerText = 'バック\nアップ';
 
       const backupDialog = document.createElement('dialog');
       backupDialog.style.background = '#fff';
@@ -1188,6 +1294,9 @@
     const equipSwitchButton = button.cloneNode();
     equipSwitchButton.textContent = '▶武器';
     equipSwitchButton.style.width = '4em';
+    equipSwitchButton.style.height = '42px';
+    equipSwitchButton.style.fontSize = '';
+
     equipSwitchButton.style.whiteSpace = 'nowrap';
     equipSwitchButton.addEventListener('click', (event)=>{
       if(!weaponTable.style.display) {
@@ -1211,6 +1320,10 @@
     // register
     const registerButton = button.cloneNode();
     registerButton.textContent = '登録';
+    registerButton.style.width = '4em';
+    registerButton.style.height = '42px';
+    registerButton.style.fontSize = '';
+
     (()=>{
       const dialog = document.createElement('dialog');
       dialog.style.background = '#fff';
@@ -1563,9 +1676,16 @@
     grid.style.gridTemplateColumns = grid.style.gridTemplateColumns.replace('35px','105px');
     grid.parentNode.style.height = null;
     grid.parentNode.style.padding = '20px 0';
+
+    let maxGridColumns;
+    if (settings.gridColumns >= 1) {
+      maxGridColumns = Math.trunc(settings.gridColumns);
+    } else if (vw < 768) {
+      maxGridColumns = 8;
+    }
     const cols = Number(grid.style.gridTemplateColumns.match(/repeat\((\d+),/)[1]);
-    if (vw < 768 && cols > 8) {
-      grid.style.gridTemplateColumns = 'repeat(8, 105px)';
+    if (cols > maxGridColumns) {
+      grid.style.gridTemplateColumns = `repeat(${maxGridColumns}, 105px)`;
     }
 
     const cells = grid.querySelectorAll('.cell');
@@ -1667,7 +1787,10 @@
         cells.push(cell.cloneNode());
         tr.append(cells[i]);
       }
-      cells[0].append(coordinate, document.createElement('hr'), equipCond);
+      const hr = document.createElement('hr');
+      hr.style.margin = '10px 0';
+
+      cells[0].append(coordinate, hr, equipCond);
       cells[1].append(holderName, document.createElement('br'), `${teamName}`);
       cells[2].innerText = `勝:${statistics[0]}\n負:${statistics[1]}\n引:${statistics[2]}`;
       cells[3].innerText = `強化:${modCounts[0]}\n弱体:${modCounts[1]}\n${modders}人`;
