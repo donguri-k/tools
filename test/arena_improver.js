@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         donguri arena assist tool
-// @version      1.1g
+// @version      1.1h
 // @description  fix arena ui and add functions
 // @author       7234e634
 // @match        https://donguri.5ch.net/teambattle
@@ -600,6 +600,18 @@
       arenaResult.style.left = settings.arenaResultPositionLength || 'auto';
     }
   })();
+  const helpDialog = document.createElement('dialog');
+  helpDialog.style.background = '#fff';
+  helpDialog.style.color = '#000';
+  helpDialog.style.fontSize = '80%';
+  helpDialog.style.textAlign = 'left';
+  helpDialog.style.maxHeight = '60vh';
+  helpDialog.style.width = '80vw';
+  helpDialog.style.overflow = 'auto';
+  helpDialog.style.position = 'fixed';
+  helpDialog.style.bottom = '8vh';
+  helpDialog.style.left = 'auto';
+
   window.addEventListener('mousedown', (event) => {
     if (!arenaResult.contains(event.target) && !rangeAttackProcessing) {
       arenaResult.close();
@@ -613,9 +625,11 @@
     if (!panel.contains(event.target)) {
       panel.style.display = 'none';
     }
+    if (!helpDialog.contains(event.target)) {
+      helpDialog.close();
+    }
   });
-  document.body.append(arenaResult);
-  document.body.append(arenaField);
+  document.body.append(arenaResult, arenaField, helpDialog);
   
   const grid = document.querySelector('.grid');
   grid.parentNode.style.height = null;
@@ -921,7 +935,7 @@
           parent: grid
         },
         settingsPanelPosition: {
-          text: '位置',
+          text: '位置:',
           type: 'select',
           options: {
             right: '右寄せ',
@@ -930,17 +944,17 @@
           parent: settingsPanel
         },
         settingsPanelHeight: {
-          text: '高さ',
+          text: '高さ:',
           type: 'height',
           parent: settingsPanel
         },
         settingsPanelWidth: {
-          text: '横幅',
+          text: '横幅:',
           type: 'width',
           parent: settingsPanel
         },
         equipPanelPosition: {
-          text: '位置',
+          text: '位置:',
           type: 'select',
           options: {
             right: '右寄せ',
@@ -949,12 +963,12 @@
           parent: equipPanel
         },
         equipPanelHeight: {
-          text: '高さ',
+          text: '高さ:',
           type: 'height',
           parent: equipPanel
         },
         equipPanelWidth: {
-          text: '横幅',
+          text: '横幅:',
           type: 'width',
           parent: equipPanel
         }
@@ -999,7 +1013,7 @@
       const link = document.createElement('a');
       link.style.color = '#666';
       link.style.textDecoration = 'underline';
-      link.textContent = 'arena assist tool - v1.1g';
+      link.textContent = 'arena assist tool - v1.1h';
       link.href = 'https://donguri-k.github.io/tools/arena-assist-tool';
       link.target = '_blank';
       const author = document.createElement('input');
@@ -1519,7 +1533,7 @@
         .map(id => fetch('https://donguri.5ch.net/equip/' + id));
 
       stat.textContent = '装備中...';
-
+      console.log(currentEquip, fetchPromises);
       try {
         const responses = await Promise.all(fetchPromises);
         const texts = await Promise.all(
@@ -1663,7 +1677,7 @@
       newTables.forEach((table, i) => {
         tables[i].replaceWith(table);
       });
-      console.log(refreshedCells);
+      addCustomColor();
       return refreshedCells;
     } catch (e) {
       console.error(e);
@@ -1701,13 +1715,14 @@
             res.ok?res.text():Promise.reject('res.ng')
           )
           .then(text => {
-            let doc = new DOMParser().parseFromString(text, 'text/html'),
+            const doc = new DOMParser().parseFromString(text, 'text/html'),
             h1 = doc?.querySelector('h1')?.textContent;
             if(h1 !== 'どんぐりチーム戦い') return Promise.reject(`title.ng [${row}][${col}][${h1}]`);
-            let cond = doc.querySelector('small')?.textContent || '';
+            const cond = doc.querySelector('small')?.textContent || '';
             if(!cond) return Promise.reject(`cond.ng [${row}][${col}][${h1}]`);
-            let holder = doc.querySelector('strong')?.textContent || '',
+            const holder = doc.querySelector('strong')?.textContent || '',
             shortenCond = cond.replace('[エリート]','e').replace('から','-').replace(/(まで|\[|\]|\||\s)/g,'');
+            const teamname = doc.querySelector('table').rows[1]?.cells[2].textContent;
             const p = [document.createElement('p'), document.createElement('p')];
             p[0].textContent = shortenCond;
             p[1].textContent = holder;
@@ -1719,6 +1734,9 @@
             cell.style.width = '100px';
             cell.style.height = '60px';
             cell.style.borderWidth = '3px';
+            if ('customColors' in settings && teamname in settings.customColors) {
+              cell.style.backgroundColor = '#' + settings.customColors[teamname];
+            }
             const rgb = cell.style.backgroundColor.match(/\d+/g);
             const brightness = 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
             cell.style.color = brightness > 128 ? '#000' : '#fff';
@@ -1732,6 +1750,121 @@
       }
     })
   }
+
+  function addCustomColor() {
+    const teamTable = document.querySelector('table');
+    const rows = [...teamTable.rows];
+    rows.shift();
+    const button = document.createElement('button');
+    button.style.padding = '4px';
+    button.style.lineHeight = '1';
+    button.style.marginLeft = '2px';
+
+    const editButton = button.cloneNode();
+    editButton.textContent = '▼';
+    editButton.addEventListener('click', ()=>{
+      editButton.style.display = 'none';
+      editEndButton.style.display = '';
+
+      rows.forEach(row => {
+        const cell = row.cells[0];
+        const cellColor = cell.textContent;
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = cellColor;
+        input.style.width = '6em';
+        input.addEventListener('change',()=>{
+          if (input.value === '') {
+            if (settings.customColors) {
+              const teamname = row.cells[1].textContent;
+              delete settings.customColors[teamname];
+              localStorage.setItem('aat_settings', JSON.stringify(settings));
+            }
+            return;
+          }
+
+          const isValidColor = /^[0-9A-Fa-f]{6}$/.test(input.value);
+          if (!isValidColor) {
+            input.value = cellColor;
+            return;
+          } else {
+            const teamname = row.cells[1].textContent;
+            if (!settings.customColors) settings.customColors = {};
+            settings.customColors[teamname] = input.value;
+            localStorage.setItem('aat_settings', JSON.stringify(settings));
+            cell.style.background = '#' + input.value;
+            row.cells[0].style.fontStyle = 'italic';
+          }
+        })
+        cell.textContent = '';
+        cell.append(input);
+      })
+    })
+    const editEndButton = button.cloneNode();
+    editEndButton.textContent = '✓';
+    editEndButton.style.display = 'none';
+    editEndButton.addEventListener('click', ()=>{
+      editButton.style.display = '';
+      editEndButton.style.display = 'none';
+
+      rows.forEach(row => {
+        const cell = row.cells[0];
+        const input = cell.querySelector('input');
+        cell.textContent = input.value;
+        input.remove();
+      })
+    })
+
+    const helpButton = button.cloneNode();
+    helpButton.textContent = '？';
+    helpButton.addEventListener('click', ()=>{
+      helpDialog.innerHTML = '';
+      const div = document.createElement('div');
+      div.style.lineHeight = '150%';
+      div.innerText = `・[▼]を押すと色を編集できます。編集後は一度[エリア情報再取得]を実行してください。
+      ・変更したチームのセルは[エリア情報更新]時に必ず取得されるようになります。
+      *更新時の読み込みを増やしたくない場合は、無闇に変更しないことを推奨します。
+      ・同色のチームが複数存在する場合、それぞれの色を変更することで同色の塗り替えに対応可能です。(カスタムカラーで上書きされたセルは常に読み込みの対象になるため)
+      ・編集した色を戻すには入力欄の文字を全て消した状態で保存してください。
+
+      仕様 (読まなくてよい)：
+      [エリア情報再取得]は全エリアにアクセスし情報を取得するのに対し、[エリア情報更新]は色が更新されたセルのみを取得するようにしてある。
+      ここで、同色のAとBのチームが存在する状況を想定する。
+      ・Bの色のみを編集した場合、Aが保持するセルをBが獲得した際、編集前の色情報が同一のためセル情報の取得が行われない。
+      ・AとBの双方を編集しておくと、Aが保持するセルは常に色情報が更新された扱いとなり取得対象になる。
+      要するに、同色の場合は全て色を変えておくとよいということ。同色がいなくなったら戻せばOK.
+      `;
+      const resetButton = button.cloneNode();
+      resetButton.textContent = '色設定初期化';
+      resetButton.addEventListener('click', ()=>{
+        delete settings.customColors;
+        localStorage.setItem('aat_settings', JSON.stringify(settings));
+        alert('色の設定を初期化しました（要エリア更新）');
+      })
+      helpDialog.append(resetButton, div);
+      helpDialog.show();
+    })
+    teamTable.rows[0].cells[0].append(editButton, editEndButton, helpButton);
+
+    function setCustomColors(rows) {
+      if (!settings.customColors) return;
+      rows.forEach(row => {
+        const teamname = row.cells[1].textContent;
+        if ('customColors' in settings && teamname in settings.customColors){
+          const color = settings.customColors[teamname];
+          row.cells[0].textContent = color;
+          row.cells[0].style.background = '#' + color;
+          row.cells[0].style.fontStyle = 'italic';
+        }
+        const rgb = row.cells[0].style.backgroundColor.match(/\d+/g);
+        const brightness = 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
+        row.cells[0].style.color = brightness > 128 ? '#000' : '#fff';
+      })
+    }
+    setCustomColors(rows);
+  }
+  addCustomColor();
+
 
   const observer = new MutationObserver(() => {
     scaleContentsToFit(grid.parentNode, grid);
