@@ -194,18 +194,20 @@
 
     const select = document.createElement('select');
     select.style.height = 'fit-content';
+    select.style.width = 'fit-content';
 
     for(const key of Object.keys(ranks)){
       const label = document.createElement('label');
       label.style.display = 'flex';
+      label.style.display.whiteSpace = 'nowrap';
       
       const span_ = span.cloneNode();
       span_.textContent = `[${key}]`;
 
-      const buffSelect = document.createElement('select');
+      const buffSelect = select.cloneNode();
       buffSelect.dataset.rank = key;
       buffSelect.classList.add('min-buffs');
-      const debuffSelect = document.createElement('select');
+      const debuffSelect = select.cloneNode();
       debuffSelect.dataset.rank = key;
       debuffSelect.classList.add('max-debuffs');
 
@@ -224,7 +226,7 @@
       option.text = '分解';
       buffSelect.add(option);
 
-      label.append(span_, 'バフ', buffSelect, ' - デバフ', debuffSelect);
+      label.append(span_, '○', buffSelect, '×', debuffSelect);
       div.append(label);
       battleChestField.append(div);
     };
