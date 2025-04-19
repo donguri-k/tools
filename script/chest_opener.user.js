@@ -192,6 +192,8 @@
     span.style.fontSize = '18px';
     span.style.whiteSpace = 'nowrap';
 
+    const select = document.createElement('select');
+    select.style.height = 'fit-content';
 
     for(const key of Object.keys(ranks)){
       const label = document.createElement('label');
