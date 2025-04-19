@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         donguri Chest Opener
-// @version      1.1e
+// @version      1.2a
 // @description  Automated box opening and recycling
 // @author       7234e634
 // @match        https://donguri.5ch.net/bag
@@ -15,7 +15,7 @@
   details.classList.add('chest-opener');
   details.style.background = '#ddd';
   const summary = document.createElement('summary');
-  summary.textContent = 'Chest Opener v1.1e';
+  summary.textContent = 'Chest Opener v1.2a';
 
   const fieldset = document.createElement('fieldset');
   fieldset.style.border = 'none';
