@@ -226,7 +226,7 @@
       option.text = '分解';
       buffSelect.add(option);
 
-      label.append(span_, '○', buffSelect, '×', debuffSelect);
+      label.append(span_, 'バフ', buffSelect, 'デバフ', debuffSelect);
       div.append(label);
       battleChestField.append(div);
     };
