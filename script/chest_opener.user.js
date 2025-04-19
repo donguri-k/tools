@@ -211,7 +211,7 @@
       debuffSelect.dataset.rank = key;
       debuffSelect.classList.add('max-debuffs');
 
-      for(let i=0; i<ranks[key]; i++){
+      for(let i=0; i<ranks[key]+1; i++){
         const buffs = document.createElement('option');
         buffs.value = i;
         buffs.text = i + '以上';
