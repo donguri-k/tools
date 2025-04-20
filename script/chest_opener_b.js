@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         donguri Chest Opener
-// @version      1.2a
+// @version      1.2b
 // @description  Automated box opening and recycling
 // @author       7234e634
 // @match        https://donguri.5ch.net/bag
@@ -11,11 +11,11 @@
 (()=>{
   const container = document.createElement('div');
   const details = document.createElement('details');
-  details.open = true; /* bookmarklet用 true */
+  //details.open = true; /* bookmarklet用 true */
   details.classList.add('chest-opener');
   details.style.background = '#ddd';
   const summary = document.createElement('summary');
-  summary.textContent = 'Chest Opener v1.2a';
+  summary.textContent = 'Chest Opener v1.2b';
 
   const fieldset = document.createElement('fieldset');
   fieldset.style.border = 'none';
@@ -67,7 +67,7 @@
   
   const form = document.createElement('form');
   const equipChestField = fieldset.cloneNode();
-  //equipChestField.style.display = 'none';
+  equipChestField.style.display = 'none';
   form.append(equipChestField);
   equipChestField.addEventListener('change', saveInputData);
 
@@ -156,6 +156,7 @@
     const radios = [];
     for(let i=0; i<loopConds.length; i++){
       radios[i] = radio.cloneNode();
+      radios[i].value = loopConds[i].value;
       const label = document.createElement('label');
       label.style.display = 'inline-block';
       label.append(radios[i], loopConds[i].item);
@@ -232,7 +233,7 @@
     };
 
     const description = document.createElement('p');
-    description.innerHTML = 'レアリティごとに下限バフ数と上限デバフ数を選択。（不要なものは「分解」を選択）<br>武器・防具と異なりロックはしないので注意';
+    description.innerHTML = 'レアリティごとに下限バフ数と上限デバフ数を選択。（不要なものは「分解」を選択）<br>例: 「バフ3以上 デバフ0以下」の場合、バフが2つ以下のものとデバフが1つでもあるものは分解<br>武器・防具と異なりロックはしないので注意';
     description.style.fontSize = '14px';
     div.append(description);
   })();
@@ -253,6 +254,7 @@
   const epic = document.createElement('p');
   epic.style.height = '64px';
   epic.style.overflowY = 'auto';
+  epic.style.fontSize = '80%';
   stats.append(count,epic);
 
   const credit = document.createElement('div');
@@ -361,7 +363,6 @@
                 if(itemName.includes('[SSR]')) p.style.background = '#a633d6';
                 p.style.color = '#fff';
                 p.style.margin = '1px';
-                p.style.fontSize = '90%';
                 epic.prepend(p);
               }
             }
@@ -388,6 +389,7 @@
             }
             chestCount++;
             count.textContent = chestCount;
+            if (loopCond === 'num') loopNum.value = maxCount - chestCount;
             stat = 'success';
           }
           if(stat !== 'success') {
@@ -563,7 +565,6 @@
               if(itemRank === 'Ag') p.style.background = '#2175d9';
               p.style.color = '#fff';
               p.style.margin = '1px';
-              p.style.fontSize = '90%';
               epic.prepend(p);
             }
 
@@ -594,6 +595,7 @@
               }
               chestCount++;
               count.textContent = chestCount;
+              if (loopCond === 'num') loopNum.value = maxCount - chestCount;
               stat = 'success';
             }
           }
