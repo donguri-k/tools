@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         donguri Chest Opener
-// @version      1.2c_6
+// @version      1.2c_1
 // @description  Automated box opening and recycling
 // @author       7234e634
 // @match        https://donguri.5ch.net/bag
@@ -248,19 +248,25 @@
   equipChestButton.type = 'button';
   equipChestButton.textContent = '開始';
   if(isBattleChestPage) equipChestButton.style.display = 'none';
-  loopField.append(equipChestButton);
+  details.append(equipChestButton);
 
   const battleChestButton = document.createElement('button');
   battleChestButton.type = 'button';
   battleChestButton.textContent = '開始';
   if(!isBattleChestPage) battleChestButton.style.display = 'none';
-  loopField.append(battleChestButton);
+  details.append(battleChestButton);
 
   const pauseButton = document.createElement('button');
   pauseButton.type = 'button';
-  pauseButton.textContent ='中断';
+  pauseButton.textContent = '中断';
   pauseButton.style.display = 'none';
-  loopField.appendChild(pauseButton);
+  details.appendChild(pauseButton);
+
+  let pausePressed = false;
+  pauseButton.addEventListener('click', ()=>{
+    pausePressed = true;
+  });
+
 
   const stats = document.createElement('div');
   const count = document.createElement('p');
@@ -294,11 +300,6 @@
   document.body.prepend(container);
   loadInputData();
 
-  let pausePressed  = false;
-  pauseButton.addEventListener('click', ()=>{
-    pausePressed = true;
-    console.log(pausePressed)
-  });
 
   equipChestButton.addEventListener('click',async function() {
     switchChestField.disabled = true;
@@ -332,10 +333,6 @@
     const maxCount = Number(loopNum.value);
 
     while (loopCond === 'max' || chestCount < maxCount){
-      if(pausePressed) {
-        forceStop('中断');
-        break;
-      }
       const startTime = Date.now();
       let stat = 'initial';
       try {
@@ -425,6 +422,11 @@
           }
         } catch (error) {
           forceStop(error);
+          break;
+        }
+
+        if(pausePressed) {
+          forceStop('中断');
           break;
         }
 
@@ -546,11 +548,6 @@
     const debuffs = ['静まった','薄まった','弱まった','減速した','減少した','砕けた','ぼやけた','制限された','緩んだ','鈍らせた','侵食された'];
   
     while (loopCond === 'max' || chestCount < maxCount){
-      console.log('while:'+pausePressed);
-      if(pausePressed) {
-        forceStop('中断');
-        break;
-      }
       const startTime = Date.now();
       let stat = 'initial';
       try {
@@ -648,6 +645,12 @@
           forceStop(error);
           break;
         }
+
+        if(pausePressed) {
+          forceStop('中断');
+          break;
+        }
+
         await waitRemainingTime(startTime);
       } catch (error) {
         forceStop(error);
