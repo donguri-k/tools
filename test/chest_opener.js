@@ -21,6 +21,8 @@
   fieldset.style.border = 'none';
   fieldset.style.padding = '0';
 
+  const isBattleChestPage = location.href.startsWith('https://donguri.5ch.net/battlechest');
+
   // switch chest
   const switchChestField = fieldset.cloneNode();
   (()=>{
@@ -29,18 +31,22 @@
     radio.name = 'chestType';
     const equipChest = radio.cloneNode();
     const battleChest = radio.cloneNode();
-    equipChest.checked = true;
+    if (isBattleChestPage) {
+      battleChest.checked = true;
+    } else {
+      equipChest.checked = true;
+    }
     equipChest.addEventListener('click',()=>{
-      equipChestField.style.display = '';
-      equipChestButton.style.display = '';
-      battleChestField.style.display = 'none';
-      battleChestButton.style.display = 'none';
+      equipChestField.style.display = isBattleChestPage ? 'none' : '';
+      equipChestButton.style.display = isBattleChestPage ? 'none': '';
+      battleChestField.style.display = isBattleChestPage ? 'none' : '';
+      battleChestButton.style.display = isBattleChestPage ? 'none' : '';
     })
     battleChest.addEventListener('click',()=>{
-      equipChestField.style.display = 'none';
-      equipChestButton.style.display = 'none';
-      battleChestField.style.display = '';
-      battleChestButton.style.display = '';
+      equipChestField.style.display = isBattleChestPage ? '' : 'none';
+      equipChestButton.style.display = isBattleChestPage ? '' : 'none';
+      battleChestField.style.display = isBattleChestPage ? 'none' : '';
+      battleChestButton.style.display = isBattleChestPage ? 'none' : '';
     })
 
     const equipLabel = document.createElement('label');
