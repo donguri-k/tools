@@ -11,7 +11,7 @@
 (()=>{
   const container = document.createElement('div');
   const details = document.createElement('details');
-  //details.open = true; /* bookmarklet用 true */
+  details.open = true; /* bookmarklet用 true */
   details.classList.add('chest-opener');
   details.style.background = '#ddd';
   const summary = document.createElement('summary');
@@ -67,7 +67,7 @@
   
   const form = document.createElement('form');
   const equipChestField = fieldset.cloneNode();
-  equipChestField.style.display = 'none';
+  //equipChestField.style.display = 'none';
   form.append(equipChestField);
   equipChestField.addEventListener('change', saveInputData);
 
