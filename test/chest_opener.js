@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         donguri Chest Opener
-// @version      1.2c
+// @version      1.2c_2
 // @description  Automated box opening and recycling
 // @author       7234e634
 // @match        https://donguri.5ch.net/bag
@@ -37,16 +37,16 @@
       equipChest.checked = true;
     }
     equipChest.addEventListener('click',()=>{
-      equipChestField.style.display = isBattleChestPage ? 'none' : '';
-      equipChestButton.style.display = isBattleChestPage ? 'none': '';
-      battleChestField.style.display = isBattleChestPage ? 'none' : '';
-      battleChestButton.style.display = isBattleChestPage ? 'none' : '';
+      equipChestField.style.display = '';
+      equipChestButton.style.display = '';
+      battleChestField.style.display = 'none';
+      battleChestButton.style.display = 'none';
     })
     battleChest.addEventListener('click',()=>{
-      equipChestField.style.display = isBattleChestPage ? '' : 'none';
-      equipChestButton.style.display = isBattleChestPage ? '' : 'none';
-      battleChestField.style.display = isBattleChestPage ? 'none' : '';
-      battleChestButton.style.display = isBattleChestPage ? 'none' : '';
+      equipChestField.style.display = 'none';
+      equipChestButton.style.display = 'none';
+      battleChestField.style.display = '';
+      battleChestButton.style.display = '';
     })
 
     const equipLabel = document.createElement('label');
@@ -73,12 +73,12 @@
   
   const form = document.createElement('form');
   const equipChestField = fieldset.cloneNode();
-  //equipChestField.style.display = 'none';
+  if(isBattleChestPage) equipChestField.style.display = 'none';
   form.append(equipChestField);
   equipChestField.addEventListener('change', saveInputData);
 
   const battleChestField = fieldset.cloneNode();
-  battleChestField.style.display = 'none';
+  if(!isBattleChestPage) battleChestField.style.display = 'none';
   form.append(battleChestField);
   battleChestField.addEventListener('change', saveInputData);
 
@@ -247,12 +247,13 @@
   const equipChestButton = document.createElement('button');
   equipChestButton.type = 'button';
   equipChestButton.textContent = '開始';
+  if(isBattleChestPage) equipChestButton.style.display = 'none';
   loopField.append(equipChestButton);
 
   const battleChestButton = document.createElement('button');
   battleChestButton.type = 'button';
   battleChestButton.textContent = '開始';
-  battleChestButton.style.display = 'none';
+  if(!isBattleChestPage) battleChestButton.style.display = 'none';
   loopField.append(battleChestButton);
 
   const pauseButton = document.createElement('button');
