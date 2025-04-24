@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         donguri Chest Opener
-// @version      1.2b
+// @version      1.2c
 // @description  Automated box opening and recycling
 // @author       7234e634
 // @match        https://donguri.5ch.net/bag
@@ -15,11 +15,13 @@
   details.classList.add('chest-opener');
   details.style.background = '#ddd';
   const summary = document.createElement('summary');
-  summary.textContent = 'Chest Opener v1.2b';
+  summary.textContent = 'Chest Opener v1.2c';
 
   const fieldset = document.createElement('fieldset');
   fieldset.style.border = 'none';
   fieldset.style.padding = '0';
+
+  const isBattleChestPage = location.href.startsWith('https://donguri.5ch.net/battlechest');
 
   // switch chest
   const switchChestField = fieldset.cloneNode();
@@ -29,7 +31,11 @@
     radio.name = 'chestType';
     const equipChest = radio.cloneNode();
     const battleChest = radio.cloneNode();
-    equipChest.checked = true;
+    if (isBattleChestPage) {
+      battleChest.checked = true;
+    } else {
+      equipChest.checked = true;
+    }
     equipChest.addEventListener('click',()=>{
       equipChestField.style.display = '';
       equipChestButton.style.display = '';
@@ -67,12 +73,12 @@
   
   const form = document.createElement('form');
   const equipChestField = fieldset.cloneNode();
-  //equipChestField.style.display = 'none';
+  if(isBattleChestPage) equipChestField.style.display = 'none';
   form.append(equipChestField);
   equipChestField.addEventListener('change', saveInputData);
 
   const battleChestField = fieldset.cloneNode();
-  battleChestField.style.display = 'none';
+  if(!isBattleChestPage) battleChestField.style.display = 'none';
   form.append(battleChestField);
   battleChestField.addEventListener('change', saveInputData);
 
@@ -241,13 +247,26 @@
   const equipChestButton = document.createElement('button');
   equipChestButton.type = 'button';
   equipChestButton.textContent = '開始';
-  loopField.append(equipChestButton);
+  if(isBattleChestPage) equipChestButton.style.display = 'none';
+  details.append(equipChestButton);
 
   const battleChestButton = document.createElement('button');
   battleChestButton.type = 'button';
   battleChestButton.textContent = '開始';
-  battleChestButton.style.display = 'none';
-  loopField.append(battleChestButton);
+  if(!isBattleChestPage) battleChestButton.style.display = 'none';
+  details.append(battleChestButton);
+
+  const pauseButton = document.createElement('button');
+  pauseButton.type = 'button';
+  pauseButton.textContent = '中断';
+  pauseButton.style.display = 'none';
+  details.appendChild(pauseButton);
+
+  let pausePressed = false;
+  pauseButton.addEventListener('click', ()=>{
+    pausePressed = true;
+  });
+
 
   const stats = document.createElement('div');
   const count = document.createElement('p');
@@ -281,10 +300,13 @@
   document.body.prepend(container);
   loadInputData();
 
+
   equipChestButton.addEventListener('click',async function() {
     switchChestField.disabled = true;
     equipChestField.disabled = true;
     loopField.disabled = true;
+    equipChestButton.style.display = 'none';
+    pauseButton.style.display = '';
 
     // too fast対策の待機
     async function waitRemainingTime(startTime) {
@@ -299,6 +321,9 @@
       switchChestField.disabled = false;
       equipChestField.disabled = false;
       loopField.disabled = false;
+      equipChestButton.style.display = '';
+      pauseButton.style.display = 'none';
+      pausePressed = false;
       count.textContent = chestCount + ', ' + error;
       console.error(error);
     }
@@ -399,6 +424,12 @@
           forceStop(error);
           break;
         }
+
+        if(pausePressed) {
+          forceStop('中断');
+          break;
+        }
+
         await waitRemainingTime(startTime);
       } catch (error) {
         forceStop(error);
@@ -408,6 +439,8 @@
     switchChestField.disabled = false;
     loopField.disabled = false;
     equipChestField.disabled = false;
+    equipChestButton.style.display = '';
+    pauseButton.style.display = 'none';
   })
 
   async function itemLocking(doc) {
@@ -472,6 +505,8 @@
     switchChestField.disabled = true;
     loopField.disabled = true;
     battleChestField.disabled = true;
+    battleChestButton.style.display = 'none';
+    pauseButton.style.display = '';
 
     // too fast対策の待機
     async function waitRemainingTime(startTime) {
@@ -486,6 +521,9 @@
       switchChestField.disabled = false;
       loopField.disabled = false;
       battleChestField.disabled = false;
+      battleChestButton.style.display = '';
+      pauseButton.style.display = 'none';
+      pausePressed = false;
       count.textContent = chestCount + ', ' + error;
       console.error(error);
     }
@@ -509,7 +547,6 @@
     const buffs = ['増幅された','強化された','加速した','高まった','力を増した','クリアになった','増幅された','固くなった','尖らせた'];
     const debuffs = ['静まった','薄まった','弱まった','減速した','減少した','砕けた','ぼやけた','制限された','緩んだ','鈍らせた','侵食された'];
   
-
     while (loopCond === 'max' || chestCount < maxCount){
       const startTime = Date.now();
       let stat = 'initial';
@@ -570,18 +607,19 @@
 
 
             if(!shouldNotRecycle.checked){
-              const itemEffects = lastItem.querySelectorAll('td')[3].innerText
-                .split('\n')
-                .map(v => {
-                  const match = v.match(/^(.+): (\d+)% (.+)$/);
-                  const [, type, value, effect] = match;
-                  return [type, effect, value];
-                });
+              const itemEffectsLi = lastItem.cells[3].querySelectorAll('li');
+              const itemEffects = [...itemEffectsLi].map(elm => {
+                const v = elm.textContent;
+                const match = v.match(/^(.+): (\d+)% (.+)$/);
+                const [, type, value, effect] = match;
+                return [type, effect, value];
+              });
               
               const buffCount = itemEffects.filter(effects => buffs.includes(effects[1])).length;
               const debuffCount = itemEffects.filter(effects => debuffs.includes(effects[1])).length;
               // 分解
               if (buffCount < minBuffs[itemRank] || debuffCount > maxDebuffs[itemRank]) {
+                console.log(itemEffects);
                 try {
                   const recycleLink = lastItem.querySelectorAll('a')[2];
                   const response = await fetch(recycleLink.href);
@@ -607,6 +645,12 @@
           forceStop(error);
           break;
         }
+
+        if(pausePressed) {
+          forceStop('中断');
+          break;
+        }
+
         await waitRemainingTime(startTime);
       } catch (error) {
         forceStop(error);
@@ -616,6 +660,8 @@
     switchChestField.disabled = false;
     loopField.disabled = false;
     battleChestField.disabled = false;
+    battleChestButton.style.display = '';
+    pauseButton.style.display = 'none';
   })
 
   function saveInputData(){
