@@ -15,7 +15,7 @@
   details.classList.add('chest-opener');
   details.style.background = '#ddd';
   const summary = document.createElement('summary');
-  summary.textContent = 'Chest Opener v1.2b';
+  summary.textContent = 'Chest Opener v1.2c';
 
   const fieldset = document.createElement('fieldset');
   fieldset.style.border = 'none';
@@ -249,6 +249,12 @@
   battleChestButton.style.display = 'none';
   loopField.append(battleChestButton);
 
+  const pauseButton = document.createElement('button');
+  pauseButton.type = 'button';
+  pauseButton.textContent ='中断';
+  pauseButton.style.display = 'none';
+  loopField.appendChild(pauseButton);
+
   const stats = document.createElement('div');
   const count = document.createElement('p');
   const epic = document.createElement('p');
@@ -281,10 +287,15 @@
   document.body.prepend(container);
   loadInputData();
 
+  let pausePressed  = false;
+  pauseButton.addEventListener('click', ()=>{pausePressed = true});
+
   equipChestButton.addEventListener('click',async function() {
     switchChestField.disabled = true;
     equipChestField.disabled = true;
     loopField.disabled = true;
+    equipChestButton.style.display = 'none';
+    pauseButton.style.display = '';
 
     // too fast対策の待機
     async function waitRemainingTime(startTime) {
@@ -299,6 +310,8 @@
       switchChestField.disabled = false;
       equipChestField.disabled = false;
       loopField.disabled = false;
+      equipChestButton.style.display = '';
+      pauseButton.style.display = 'none';
       count.textContent = chestCount + ', ' + error;
       console.error(error);
     }
@@ -399,6 +412,13 @@
           forceStop(error);
           break;
         }
+
+        if(pausePressed) {
+          forceStop('中断');
+          pausePressed = false;
+          break;
+        }
+
         await waitRemainingTime(startTime);
       } catch (error) {
         forceStop(error);
@@ -408,6 +428,8 @@
     switchChestField.disabled = false;
     loopField.disabled = false;
     equipChestField.disabled = false;
+    equipChestButton.style.display = '';
+    pauseButton.style.display = 'none';
   })
 
   async function itemLocking(doc) {
@@ -472,6 +494,8 @@
     switchChestField.disabled = true;
     loopField.disabled = true;
     battleChestField.disabled = true;
+    battleChestButton.style.display = 'none';
+    pauseButton.style.display = '';
 
     // too fast対策の待機
     async function waitRemainingTime(startTime) {
@@ -486,6 +510,8 @@
       switchChestField.disabled = false;
       loopField.disabled = false;
       battleChestField.disabled = false;
+      battleChestButton.style.display = '';
+      pauseButton.style.display = 'none';
       count.textContent = chestCount + ', ' + error;
       console.error(error);
     }
@@ -509,7 +535,6 @@
     const buffs = ['増幅された','強化された','加速した','高まった','力を増した','クリアになった','増幅された','固くなった','尖らせた'];
     const debuffs = ['静まった','薄まった','弱まった','減速した','減少した','砕けた','ぼやけた','制限された','緩んだ','鈍らせた','侵食された'];
   
-
     while (loopCond === 'max' || chestCount < maxCount){
       const startTime = Date.now();
       let stat = 'initial';
@@ -608,6 +633,13 @@
           forceStop(error);
           break;
         }
+
+        if(pausePressed) {
+          forceStop('中断');
+          pausePressed = false;
+          break;
+        }
+
         await waitRemainingTime(startTime);
       } catch (error) {
         forceStop(error);
@@ -617,6 +649,8 @@
     switchChestField.disabled = false;
     loopField.disabled = false;
     battleChestField.disabled = false;
+    battleChestButton.style.display = '';
+    pauseButton.style.display = 'none';
   })
 
   function saveInputData(){
