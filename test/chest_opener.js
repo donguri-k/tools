@@ -570,13 +570,13 @@
 
 
             if(!shouldNotRecycle.checked){
-              const itemEffects = lastItem.querySelectorAll('td')[3].innerText
-                .split('\n')
-                .map(v => {
-                  const match = v.match(/^(.+): (\d+)% (.+)$/);
-                  const [, type, value, effect] = match;
-                  return [type, effect, value];
-                });
+              const itemEffectsLi = lastItem.cells[3].querySelectorAll('li');
+              const itemEffects = itemEffectsLi.map(elm => {
+                const v = elm.textContent;
+                const match = v.match(/^(.+): (\d+)% (.+)$/);
+                const [, type, value, effect] = match;
+                return [type, effect, value];
+              });
               
               const buffCount = itemEffects.filter(effects => buffs.includes(effects[1])).length;
               const debuffCount = itemEffects.filter(effects => debuffs.includes(effects[1])).length;
