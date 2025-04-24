@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         donguri Chest Opener
-// @version      1.2c_2
+// @version      1.2c_3
 // @description  Automated box opening and recycling
 // @author       7234e634
 // @match        https://donguri.5ch.net/bag
@@ -327,7 +327,7 @@
     const loopCond = document.querySelector('input[name="loopCond"]:checked').value;
     const maxCount = Number(loopNum.value);
 
-    while (loopCond === 'max' || chestCount < maxCount){
+    while ((loopCond === 'max' || chestCount < maxCount)  && !pausePressed){
       const startTime = Date.now();
       let stat = 'initial';
       try {
@@ -542,7 +542,7 @@
     const buffs = ['増幅された','強化された','加速した','高まった','力を増した','クリアになった','増幅された','固くなった','尖らせた'];
     const debuffs = ['静まった','薄まった','弱まった','減速した','減少した','砕けた','ぼやけた','制限された','緩んだ','鈍らせた','侵食された'];
   
-    while (loopCond === 'max' || chestCount < maxCount){
+    while ((loopCond === 'max' || chestCount < maxCount)  && !pausePressed){
       const startTime = Date.now();
       let stat = 'initial';
       try {
