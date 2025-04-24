@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         donguri Chest Opener
-// @version      1.2b
+// @version      1.2c
 // @description  Automated box opening and recycling
 // @author       7234e634
 // @match        https://donguri.5ch.net/bag
@@ -571,7 +571,7 @@
 
             if(!shouldNotRecycle.checked){
               const itemEffectsLi = lastItem.cells[3].querySelectorAll('li');
-              const itemEffects = itemEffectsLi.map(elm => {
+              const itemEffects = [...itemEffectsLi].map(elm => {
                 const v = elm.textContent;
                 const match = v.match(/^(.+): (\d+)% (.+)$/);
                 const [, type, value, effect] = match;
