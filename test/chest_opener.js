@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         donguri Chest Opener
-// @version      1.2c_3
+// @version      1.2c_4
 // @description  Automated box opening and recycling
 // @author       7234e634
 // @match        https://donguri.5ch.net/bag
@@ -319,6 +319,7 @@
       loopField.disabled = false;
       equipChestButton.style.display = '';
       pauseButton.style.display = 'none';
+      pausePressed = false;
       count.textContent = chestCount + ', ' + error;
       console.error(error);
     }
@@ -327,7 +328,7 @@
     const loopCond = document.querySelector('input[name="loopCond"]:checked').value;
     const maxCount = Number(loopNum.value);
 
-    while ((loopCond === 'max' || chestCount < maxCount)  && !pausePressed){
+    while (loopCond === 'max' || chestCount < maxCount){
       const startTime = Date.now();
       let stat = 'initial';
       try {
@@ -422,7 +423,6 @@
 
         if(pausePressed) {
           forceStop('中断');
-          pausePressed = false;
           break;
         }
 
@@ -519,6 +519,7 @@
       battleChestField.disabled = false;
       battleChestButton.style.display = '';
       pauseButton.style.display = 'none';
+      pausePressed = false;
       count.textContent = chestCount + ', ' + error;
       console.error(error);
     }
@@ -542,7 +543,7 @@
     const buffs = ['増幅された','強化された','加速した','高まった','力を増した','クリアになった','増幅された','固くなった','尖らせた'];
     const debuffs = ['静まった','薄まった','弱まった','減速した','減少した','砕けた','ぼやけた','制限された','緩んだ','鈍らせた','侵食された'];
   
-    while ((loopCond === 'max' || chestCount < maxCount)  && !pausePressed){
+    while (loopCond === 'max' || chestCount < maxCount){
       const startTime = Date.now();
       let stat = 'initial';
       try {
@@ -643,7 +644,6 @@
 
         if(pausePressed) {
           forceStop('中断');
-          pausePressed = false;
           break;
         }
 
