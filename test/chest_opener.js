@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         donguri Chest Opener
-// @version      1.2a
+// @version      1.2b
 // @description  Automated box opening and recycling
 // @author       7234e634
 // @match        https://donguri.5ch.net/bag
@@ -15,7 +15,7 @@
   details.classList.add('chest-opener');
   details.style.background = '#ddd';
   const summary = document.createElement('summary');
-  summary.textContent = 'Chest Opener v1.2a';
+  summary.textContent = 'Chest Opener v1.2b';
 
   const fieldset = document.createElement('fieldset');
   fieldset.style.border = 'none';
@@ -582,6 +582,7 @@
               const debuffCount = itemEffects.filter(effects => debuffs.includes(effects[1])).length;
               // 分解
               if (buffCount < minBuffs[itemRank] || debuffCount > maxDebuffs[itemRank]) {
+                console.log(itemEffects);
                 try {
                   const recycleLink = lastItem.querySelectorAll('a')[2];
                   const response = await fetch(recycleLink.href);
