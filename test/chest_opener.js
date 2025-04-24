@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         donguri Chest Opener
-// @version      1.2c_5
+// @version      1.2c_6
 // @description  Automated box opening and recycling
 // @author       7234e634
 // @match        https://donguri.5ch.net/bag
@@ -295,7 +295,10 @@
   loadInputData();
 
   let pausePressed  = false;
-  pauseButton.addEventListener('click', ()=>{pausePressed = true});
+  pauseButton.addEventListener('click', ()=>{
+    pausePressed = true;
+    console.log(pausePressed)
+  });
 
   equipChestButton.addEventListener('click',async function() {
     switchChestField.disabled = true;
@@ -543,6 +546,7 @@
     const debuffs = ['静まった','薄まった','弱まった','減速した','減少した','砕けた','ぼやけた','制限された','緩んだ','鈍らせた','侵食された'];
   
     while (loopCond === 'max' || chestCount < maxCount){
+      console.log('while:'+pausePressed);
       if(pausePressed) {
         forceStop('中断');
         break;
