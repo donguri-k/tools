@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         donguri arena assist tool
-// @version      1.1h
+// @version      1.1g
 // @description  fix arena ui and add functions
 // @author       7234e634
 // @match        https://donguri.5ch.net/teambattle
@@ -225,7 +225,7 @@
         const intervalInput = document.createElement('input');
         intervalInput.type = 'number';
         intervalInput.placeholder = '600';
-        intervalInput.style.width = '64px';
+        intervalInput.style.width = '80px';
         intervalInput.style.background = '#fff';
         intervalInput.style.color = '#000';
         label.append(intervalInput, '秒');
@@ -1013,7 +1013,7 @@
       const link = document.createElement('a');
       link.style.color = '#666';
       link.style.textDecoration = 'underline';
-      link.textContent = 'arena assist tool - v1.1h';
+      link.textContent = 'arena assist tool - v1.1g';
       link.href = 'https://donguri-k.github.io/tools/arena-assist-tool';
       link.target = '_blank';
       const author = document.createElement('input');
@@ -1488,10 +1488,11 @@
       const span1 = document.createElement('span');
       span1.style.flexGrow = '1';
       span1.style.whiteSpace = 'nowrap';
-      span1.style.overflowX = 'hidden';
+      span1.style.overflow = 'hidden';
       const span2 = document.createElement('span');
       span2.style.whiteSpace = 'nowrap';
       span2.style.textAlign = 'right';
+      span2.style.overflow = 'hidden';
       span2.style.fontSize = '90%';
       liTemplate.append(span1,span2);
       const fragment = document.createDocumentFragment();
@@ -1533,7 +1534,6 @@
         .map(id => fetch('https://donguri.5ch.net/equip/' + id));
 
       stat.textContent = '装備中...';
-
       try {
         const responses = await Promise.all(fetchPromises);
         const texts = await Promise.all(
@@ -1723,13 +1723,15 @@
             const holder = doc.querySelector('strong')?.textContent || '',
             shortenCond = cond.replace('[エリート]','e').replace('から','-').replace(/(まで|\[|\]|\||\s)/g,'');
             const teamname = doc.querySelector('table').rows[1]?.cells[2].textContent;
-            const p = [document.createElement('p'), document.createElement('p')];
+            const p = [document.createElement('p'), document.createElement('p'), document.createElement('p')];
             p[0].textContent = shortenCond;
             p[1].textContent = holder;
+            p[2].textContent = teamname;
             p[0].style.margin = '0';
             p[1].style.margin = '0';
+            p[2].style.display = 'none';
             const cell = elm.cloneNode();
-            cell.append(p[0],p[1]);
+            cell.append(p[0],p[1],p[2]);
             cell.style.overflow = 'hidden';
             cell.style.width = '100px';
             cell.style.height = '60px';
@@ -2243,7 +2245,7 @@
           const lastLine = text.trim().split('\n').pop();
           let message = lastLine;
           let nextStep = [0, interval()];
-          if (lastLine.startsWith('装備している')) {
+          if (lastLine.startsWith('装備している') || lastLine.includes('あなたのチームは首都を持っていないため、他のチームの首都に攻撃できません。')) {
             // 装備している防具と武器が力不足です。
             // 装備している防具と武器が強すぎます
             // 装備しているものは改造が多すぎます。改造の少ない他のものをお試しください
