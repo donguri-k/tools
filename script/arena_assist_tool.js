@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         donguri arena assist tool
-// @version      1.1i
+// @version      1.1j
 // @description  fix arena ui and add functions
 // @author       7234e634
 // @match        https://donguri.5ch.net/teambattle
@@ -1013,7 +1013,7 @@
       const link = document.createElement('a');
       link.style.color = '#666';
       link.style.textDecoration = 'underline';
-      link.textContent = 'arena assist tool - v1.1i';
+      link.textContent = 'arena assist tool - v1.1j';
       link.href = 'https://donguri-k.github.io/tools/arena-assist-tool';
       link.target = '_blank';
       const author = document.createElement('input');
@@ -2245,7 +2245,10 @@
           const lastLine = text.trim().split('\n').pop();
           let message = lastLine;
           let nextStep = [0, interval()];
-          if (lastLine.startsWith('装備している') || lastLine.includes('あなたのチームは首都を持っていないため、他のチームの首都に攻撃できません。')) {
+          if (lastLine.startsWith('装備している')
+            || lastLine.includes('あなたのチームは首都を持っていないため、他のチームの首都に攻撃できません。')
+            || lastLine.includes('このマスには攻撃できません')
+          ) {
             // 装備している防具と武器が力不足です。
             // 装備している防具と武器が強すぎます
             // 装備しているものは改造が多すぎます。改造の少ない他のものをお試しください
@@ -2360,4 +2363,3 @@
     });
   })();
 })();
-
