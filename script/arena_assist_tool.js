@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         donguri arena assist tool
-// @version      1.1j
+// @version      1.2.0a
 // @description  fix arena ui and add functions
 // @author       7234e634
 // @match        https://donguri.5ch.net/teambattle
@@ -104,17 +104,10 @@
       panel.style.display = 'flex';
     });
 
-    let currnetSort = 'default';
-    const sortButton = button.cloneNode();
-    sortButton.innerText = 'ソート\n切り替え';
-    sortButton.addEventListener('click', ()=>{
-      if(currnetSort === 'default') {
-        sortCells('cond');
-        currnetSort = 'cond';
-      } else {
-        sortCells('default');
-        currnetSort = 'default';
-      }
+    const toggleViewButton = button.cloneNode();
+    toggleViewButton.innerText = '表示\n切り替え';
+    toggleViewButton.addEventListener('click', ()=>{
+      toggleCellViewMode();
     })
 
     const cellButton = button.cloneNode();
@@ -404,7 +397,7 @@
     main.style.flexWrap = 'nowrap';
     main.style.gap = '2px';
     main.style.justifyContent = 'center';
-    main.append(menuButton, equipButton, sortButton, refreshButton, cellButton);
+    main.append(menuButton, equipButton, toggleViewButton, refreshButton, cellButton);
 
     toolbar.append(main, subMenu);
   })();
@@ -843,8 +836,8 @@
       addHeader('アリーナログ', arenaResult);
       const arenaField = container.cloneNode();
       addHeader('アリーナ情報', arenaField);
-      const grid = container.cloneNode();
-      addHeader('グリッド', grid);
+      //const grid = container.cloneNode();
+      //addHeader('グリッド', grid);
       const settingsPanel = container.cloneNode();
       addHeader('設定パネル', settingsPanel);
       const equipPanel = container.cloneNode();
@@ -929,11 +922,6 @@
           type: 'width',
           parent: arenaField
         },
-        gridColumns: {
-          text: '1行の最大セル数:',
-          type: 'number',
-          parent: grid
-        },
         settingsPanelPosition: {
           text: '位置:',
           type: 'select',
@@ -1001,7 +989,7 @@
         }
       })
 
-      settingsMenu.append(toolbar, arenaResult, arenaField, grid, settingsPanel, equipPanel);
+      settingsMenu.append(toolbar, arenaResult, arenaField, settingsPanel, equipPanel);
       refreshSettings();
     })();
     
@@ -1013,7 +1001,7 @@
       const link = document.createElement('a');
       link.style.color = '#666';
       link.style.textDecoration = 'underline';
-      link.textContent = 'arena assist tool - v1.1j';
+      link.textContent = 'arena assist tool - v1.2.0a';
       link.href = 'https://donguri-k.github.io/tools/arena-assist-tool';
       link.target = '_blank';
       const author = document.createElement('input');
@@ -1597,6 +1585,9 @@
 
   async function refreshArenaInfo() {
     const refreshedCells = [];
+    function includesCoord(arr, row, col) {
+      return arr.some(([r, c]) => r === Number(row) && c === Number(col));
+    }
   
     try {
       const res = await fetch('');
@@ -1613,7 +1604,9 @@
       const cellColorsString = scriptContent.match(/const cellColors = ({.+?})/s)[1];
       const validJsonStr = cellColorsString.replace(/'/g, '"').replace(/,\s*}/, '}');
       const cellColors = JSON.parse(validJsonStr);
-  
+      const capitalMapString = scriptContent.match(/const capitalMap = (\[\[.+?\]\])/s)[1];
+      const capitalMap = JSON.parse(capitalMapString);
+
       const newGrid = doc.querySelector('.grid');
       const rows = Number(newGrid.style.gridTemplateRows.match(/repeat\((\d+), 35px\)/)[1]);
       const cols = Number(newGrid.style.gridTemplateColumns.match(/repeat\((\d+), 35px\)/)[1]);
@@ -1634,7 +1627,8 @@
             cell.style.border = '1px solid #ccc';
             cell.style.cursor = 'pointer';
             cell.style.transition = 'background-color 0.3s';
-  
+            cell.style.outline = includesCoord(capitalMap, i, j) ? 'gold solid 2px' : '';
+   
             const cellKey = `${i}-${j}`;
             if (cellColors[cellKey]) {
               cell.style.backgroundColor = cellColors[cellKey];
@@ -1648,8 +1642,7 @@
         }
       } else {
         currentCells.forEach(cell => {
-          const row = cell.dataset.row;
-          const col = cell.dataset.col;
+          const { row, col }  = cell.dataset;
           const cellKey = `${row}-${col}`;
 
           const cellColorCode = '#' + cell.style.backgroundColor.match(/\d+/g)
@@ -1669,6 +1662,8 @@
           const rgb = cell.style.backgroundColor.match(/\d+/g);
           const brightness = 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
           cell.style.color = brightness > 128 ? '#000' : '#fff';
+
+          cell.style.outline = includesCoord(capitalMap, row, col) ? 'gold solid 2px' : '';
         });
       }
   
@@ -1686,30 +1681,21 @@
   
   async function fetchAreaInfo(refreshAll){
     const refreshedCells = await refreshArenaInfo();
-    grid.style.gridTemplateRows = grid.style.gridTemplateRows.replace('35px','65px');
-    grid.style.gridTemplateColumns = grid.style.gridTemplateColumns.replace('35px','105px');
+    if (currentViewMode === 'detail') {
+      grid.style.gridTemplateRows = grid.style.gridTemplateRows.replace('35px','65px');
+      grid.style.gridTemplateColumns = grid.style.gridTemplateColumns.replace('35px','105px');
+    }
     grid.parentNode.style.height = null;
     grid.parentNode.style.padding = '20px 0';
-
-    let maxGridColumns;
-    if (settings.gridColumns >= 1) {
-      maxGridColumns = Math.trunc(settings.gridColumns);
-    } else if (vw < 768) {
-      maxGridColumns = 8;
-    }
-    const cols = Number(grid.style.gridTemplateColumns.match(/repeat\((\d+),/)[1]);
-    if (cols > maxGridColumns) {
-      grid.style.gridTemplateColumns = `repeat(${maxGridColumns}, 105px)`;
-    }
+    
 
     const cells = grid.querySelectorAll('.cell');
     cells.forEach(elm => {
-      const hasInfo = elm.querySelector('p') !== null;
+      const hasInfo = elm.dataset.rank !== undefined;
       const isRefreshed = refreshedCells.includes(elm);
       if(refreshAll || !hasInfo || isRefreshed) {
-        let row = elm.dataset.row,
-        col = elm.dataset.col,
-        url = `https://donguri.5ch.net/teambattle?r=${row}&c=${col}`;
+        const { col, row } = elm.dataset;
+        const url = `https://donguri.5ch.net/teambattle?r=${row}&c=${col}`;
         fetch(url)
           .then(res =>
             res.ok?res.text():Promise.reject('res.ng')
@@ -1718,24 +1704,43 @@
             const doc = new DOMParser().parseFromString(text, 'text/html'),
             h1 = doc?.querySelector('h1')?.textContent;
             if(h1 !== 'どんぐりチーム戦い') return Promise.reject(`title.ng [${row}][${col}][${h1}]`);
-            const cond = doc.querySelector('small')?.textContent || '';
-            if(!cond) return Promise.reject(`cond.ng [${row}][${col}][${h1}]`);
-            const holder = doc.querySelector('strong')?.textContent || '',
-            shortenCond = cond.replace('[エリート]','e').replace('から','-').replace(/(まで|\[|\]|\||\s)/g,'');
+            const rank = doc.querySelector('small')?.textContent || '';
+            if(!rank) return Promise.reject(`rank.ng [${row}][${col}][${h1}]`);
+            const leader = doc.querySelector('strong')?.textContent || '',
+            shortenRank = rank.replace('[エリート]','e').replace('から','-').replace(/(まで|\[|\]|\||\s)/g,'');
             const teamname = doc.querySelector('table').rows[1]?.cells[2].textContent;
-            const p = [document.createElement('p'), document.createElement('p'), document.createElement('p')];
-            p[0].textContent = shortenCond;
-            p[1].textContent = holder;
-            p[2].textContent = teamname;
-            p[0].style.margin = '0';
-            p[1].style.margin = '0';
-            p[2].style.display = 'none';
+
             const cell = elm.cloneNode();
-            cell.append(p[0],p[1],p[2]);
+            if (currentViewMode === 'detail') {
+              const p = [document.createElement('p'), document.createElement('p')];
+              p[0].textContent = shortenRank;
+              p[1].textContent = leader;
+              p[0].style.margin = '0';
+              p[1].style.margin = '0';
+              cell.style.width = '100px';
+              cell.style.height = '60px';
+              cell.style.borderWidth = '3px';
+              cell.append(p[0],p[1]);
+            } else {
+              const p = document.createElement('p');
+              p.style.height = '28px';
+              p.style.width = '28px';
+              p.style.margin = '0';
+              p.style.display = 'flex';
+              p.style.alignItems = 'center';
+              p.style.lineHeight = '1';
+              p.style.justifyContent = 'center';
+              const str = shortenRank.replace(/\w+-|だけ/g,'');
+              p.textContent = str;
+              if (str.length === 3) p.style.fontSize = '14px';
+              if (str.length === 4) p.style.fontSize = '13px';
+              cell.append(p);
+            }
             cell.style.overflow = 'hidden';
-            cell.style.width = '100px';
-            cell.style.height = '60px';
-            cell.style.borderWidth = '3px';
+            cell.dataset.rank = shortenRank;
+            cell.dataset.leader = leader;
+            cell.dataset.team = teamname;
+
             if ('customColors' in settings && teamname in settings.customColors) {
               cell.style.backgroundColor = '#' + settings.customColors[teamname];
             }
@@ -1752,6 +1757,7 @@
       }
     })
   }
+
 
   function addCustomColor() {
     const teamTable = document.querySelector('table');
@@ -2094,65 +2100,60 @@
     }
   }
 
-  function sortCells(type){
-    const cells = [...document.querySelectorAll('.cell')];
-    if(type === 'default') {
-      cells.sort((a, b) => {
-        const rowA = a.dataset.row;
-        const rowB = b.dataset.row;
-        const colA = a.dataset.col;
-        const colB = b.dataset.col;
-        return rowA - rowB || colA - colB;
-      })
-    }
+  let currentViewMode = 'detail';
+  function toggleCellViewMode () {
+    const grid = document.querySelector('.grid');
+    const cells = grid.querySelectorAll('.cell');
 
-    if(type === 'cond') {
-      cells.sort((a, b) => {
-        const condA = a.querySelector('p')?.textContent;;
-        const condB = b.querySelector('p')?.textContent;;
-        if (!condA || !condB) return 0;
-      
-        const splitA = condA.split('-');
-        const splitB = condB.split('-');
-      
-        const isCompositeA = splitA.length > 1;
-        const isCompositeB = splitB.length > 1;
-      
-        const order = ['N', 'R', 'SR', 'SSR', 'UR'];
-      
-        // '-' の後のランクを取得（ない場合はそのまま）
-        const baseA = isCompositeA ? splitA[1] : condA;
-        const baseB = isCompositeB ? splitB[1] : condB;
-      
-        const indexA = order.indexOf(baseA.replace(/だけ|e/g, ''));
-        const indexB = order.indexOf(baseB.replace(/だけ|e/g, ''));
+    if(currentViewMode === 'detail') {
+      currentViewMode = 'compact';
 
-        // ランク順
-        if (indexA !== indexB) return indexA - indexB;
-      
-        // 'だけ' > 'e' > 'だけe'
-        const flag = s => 
-          (s.includes('だけ') ? 1 : 0) + (s.includes('e') ? 2 : 0);
-        const flagA = flag(condA);
-        const flagB = flag(condB);
+      grid.style.gridTemplateRows = grid.style.gridTemplateRows.replace('65px','35px');
+      grid.style.gridTemplateColumns = grid.style.gridTemplateColumns.replace('105px','35px');
 
-        if(flagA !== flagB) return flagA - flagB;
-
-        // 同じランク内で '-' を含まないものを優先
-        if (isCompositeA !== isCompositeB) return isCompositeA - isCompositeB;
-      
-        if (isCompositeA) {
-          // '-' の前のランクで比較
-          const frontA = splitA[0];
-          const frontB = splitB[0];
-          const indexFrontA = order.indexOf(frontA);
-          const indexFrontB = order.indexOf(frontB);
-          if (indexFrontA !== indexFrontB) return indexFrontA - indexFrontB;
+      for (const cell of cells) {
+        cell.style.width = '30px';
+        cell.style.height = '30px';
+        cell.style.borderWidth = '1px';
+        while (cell.firstChild) {
+          cell.firstChild.remove();
         }
-      });
+        const p = document.createElement('p');
+        p.style.height = '28px';
+        p.style.width = '28px';
+        p.style.margin = '0';
+        p.style.display = 'flex';
+        p.style.alignItems = 'center';
+        p.style.lineHeight = '1';
+        p.style.justifyContent = 'center';
+        const rank = cell.dataset.rank.replace(/\w+-|だけ/g,'');
+        p.textContent = rank;
+        if (rank.length === 3) p.style.fontSize = '14px';
+        if (rank.length === 4) p.style.fontSize = '13px';
+        cell.append(p);
+      }
+    } else {
+      currentViewMode = 'detail';
+
+      grid.style.gridTemplateRows = grid.style.gridTemplateRows.replace('35px','65px');
+      grid.style.gridTemplateColumns = grid.style.gridTemplateColumns.replace('35px','105px');
+
+      for (const cell of cells) {
+        while (cell.firstChild) {
+          cell.firstChild.remove();
+        }
+        const {rank, leader } = cell.dataset;
+        const p = [document.createElement('p'), document.createElement('p')];
+        p[0].textContent = rank;
+        p[1].textContent = leader;
+        p[0].style.margin = '0';
+        p[1].style.margin = '0';
+        cell.style.width = '100px';
+        cell.style.height = '60px';
+        cell.style.borderWidth = '3px';
+        cell.append(p[0],p[1]);
+      }
     }
-    grid.innerHTML = '';
-    cells.forEach(cell => grid.append(cell));
   }
 
   let challengeTimeoutId;
