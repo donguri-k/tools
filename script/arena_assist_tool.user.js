@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         donguri arena assist tool
-// @version      1.2.0a
+// @version      1.2.0b
 // @description  fix arena ui and add functions
 // @author       7234e634
 // @match        https://donguri.5ch.net/teambattle
@@ -97,7 +97,7 @@
       const isSubMenuOpen = subMenu.style.display === 'flex';
       subMenu.style.display = isSubMenuOpen ? 'none' : 'flex';
     })
-  
+
     const equipButton = button.cloneNode();
     equipButton.textContent = '■装備';
     equipButton.addEventListener('click', ()=>{
@@ -115,7 +115,7 @@
     cellButton.addEventListener('click',()=>{
       fetchAreaInfo(true);
     });
-  
+
     const refreshButton = button.cloneNode();
     refreshButton.innerText = 'エリア情報\n更新';
     refreshButton.addEventListener('click',()=>{
@@ -205,7 +205,7 @@
         container.style.flexDirection = 'column';
         container.style.height = '100%';
         container.style.color = '#000';
-  
+
         const log = document.createElement('div');
         log.style.margin = '2px';
         log.style.border = 'solid 1px #000';
@@ -213,7 +213,7 @@
         log.style.flexGrow = '1';
         log.style.textAlign = 'left';
         log.classList.add('auto-join-log');
-  
+
         const label = document.createElement('label');
         const intervalInput = document.createElement('input');
         intervalInput.type = 'number';
@@ -228,7 +228,7 @@
           settings.autoJoinInterval = interval > 600 ? interval : 600;
           localStorage.setItem('aat_settings', JSON.stringify(settings))
         })
-    
+
         const closeButton = document.createElement('button');
         closeButton.style.fontSize = '100%';
         closeButton.textContent = '自動参加モードを終了';
@@ -239,7 +239,7 @@
         const p = document.createElement('p');
         p.textContent = 'この画面を開いたままにしておくこと。最短600秒';
         p.style.margin = '0';
-  
+
         container.append(log, label, p, closeButton);
         autoJoinDialog.append(container);
       })();
@@ -269,7 +269,7 @@
         slideMenu.style.transform = 'translateX(0)';
         cellSelectorActivate = false;
       })
-      
+
       const startRangeAttackButton = subButton.cloneNode();
       startRangeAttackButton.textContent = '攻撃開始';
       startRangeAttackButton.style.background = '#f64';
@@ -331,7 +331,7 @@
           cell.style.borderColor = '#ccc';
         });
       })
-      
+
       const batchSelectButton = subButton.cloneNode();
       batchSelectButton.textContent = '一括選択';
       batchSelectButton.style.background = '#ffb300';
@@ -623,7 +623,7 @@
     }
   });
   document.body.append(arenaResult, arenaField, helpDialog);
-  
+
   const grid = document.querySelector('.grid');
   grid.parentNode.style.height = null;
   grid.style.maxWidth = '100%';
@@ -688,7 +688,7 @@
 
     const header = document.createElement('div');
     header.style.display = 'flex';
-    
+
     const h2 = document.createElement('h2');
     h2.textContent = '設定'
     h2.style.fontSize = '1.2rem';
@@ -829,7 +829,7 @@
       number.style.color = '#000';
       number.style.height = '2em';
       number.style.width = '4em';
-      
+
       const toolbar = container.cloneNode();
       addHeader('toolbar', toolbar);
       const arenaResult = container.cloneNode();
@@ -992,7 +992,7 @@
       settingsMenu.append(toolbar, arenaResult, arenaField, settingsPanel, equipPanel);
       refreshSettings();
     })();
-    
+
     const footer = document.createElement('div');
     footer.style.fontSize = '80%';
     footer.style.textAlign = 'right';
@@ -1001,7 +1001,7 @@
       const link = document.createElement('a');
       link.style.color = '#666';
       link.style.textDecoration = 'underline';
-      link.textContent = 'arena assist tool - v1.2.0a';
+      link.textContent = 'arena assist tool - v1.2.0b';
       link.href = 'https://donguri-k.github.io/tools/arena-assist-tool';
       link.target = '_blank';
       const author = document.createElement('input');
@@ -1023,7 +1023,7 @@
     container.append(header, settingsButtons, settingsMenu, footer)
     settingsDialog.append(container);
   })();
-  
+
   document.body.append(settingsDialog);
 
   //-- 装備 --//
@@ -1043,7 +1043,7 @@
     } else {
       panel.style.right = '0';
     }
-  
+
     if (settings.equipPanelWidth) {
       panel.style.width = settings.equipPanelWidth;
       panel.style.minWidth = '20vw';
@@ -1052,7 +1052,7 @@
       panel.style.width = '400px';
       panel.style.maxWidth = '75vw';
     }
-  
+
     if (settings.equipPanelHeight) {
       panel.style.height = settings.equipPanelHeight;
       panel.style.maxHeight = '100vh';
@@ -1060,7 +1060,7 @@
     } else {
       panel.style.height = '96vh';
     }
-  })();  
+  })();
 
   (()=>{
     const input = document.createElement('input');
@@ -1128,7 +1128,7 @@
       div.style.lineHeight = 'normal';
       const buttonsContainer = document.createElement('div');
       buttonsContainer.style.display = 'flex';
-  
+
       const closeButton = button.cloneNode();
       closeButton.textContent = '×';
       closeButton.style.marginLeft = 'auto';
@@ -1141,7 +1141,7 @@
       closeButton.addEventListener('click', ()=>{
         panel.style.display = 'none';
       })
-  
+
       const addButton = button.cloneNode();
       addButton.textContent = '追加';
       addButton.addEventListener('click', async()=>{
@@ -1209,7 +1209,7 @@
         button.addEventListener('click', () => {
           const mode = button.dataset.mode;
           if (currentMode === mode) {
-            resetMode(); 
+            resetMode();
             return;
           }
           setMode(mode, button);
@@ -1217,7 +1217,7 @@
       });
 
       function setMode(mode, button) {
-        resetMode(); 
+        resetMode();
         currentMode = mode;
         button.textContent = '終了';
         button.classList.add('active');
@@ -1244,12 +1244,12 @@
       stat.style.whiteSpace = 'nowrap';
       stat.style.overflow = 'hidden';
       stat.classList.add('equip-preset-stat');
-  
+
       buttonsContainer.append(addButton, removeButton, backupButton, closeButton);
       div.append(buttonsContainer, backupDialog, stat);
       panel.append(div);
     })();
-  
+
     panel.append(resetCurrentEquip, presetList);
     document.body.append(panel);
 
@@ -1353,7 +1353,7 @@
           if(presetNameInput.value.trim() === '') return;
           saveEquipPreset(presetNameInput.value.substring(0,32), selectedEquips);
           dialog.close();
-          presetNameInput.value = '';  
+          presetNameInput.value = '';
         }
       })
       const cancelButton = button.cloneNode();
@@ -1532,7 +1532,7 @@
             return response.text();
           })
         );
-        
+
         if(texts.includes('どんぐりが見つかりませんでした。')) {
           throw new Error('再ログインしてください');
         } else if(texts.includes('アイテムが見つかりませんでした。')) {
@@ -1547,7 +1547,7 @@
           throw new Error('装備エラー');
         }
         stat.textContent = '完了: ' + presetName;
-        localStorage.setItem('current_equip', JSON.stringify(equipPresets[presetName].id));  
+        localStorage.setItem('current_equip', JSON.stringify(equipPresets[presetName].id));
       } catch (e) {
         stat.textContent = e;
         localStorage.removeItem('current_equip');
@@ -1565,7 +1565,7 @@
       delete equipPresets[presetName];
       localStorage.setItem('equipPresets', JSON.stringify(equipPresets));
       showEquipPreset();
-    }  
+    }
   })();
   //-- ここまで --//
 
@@ -1577,7 +1577,7 @@
     contents.style.transformOrigin = 'top left';
 
     const scaledHeight = contents.scrollHeight * scaleFactor;
-  
+
     contents.style.height = `${scaledHeight}px`;
   }
 
@@ -1588,19 +1588,24 @@
     function includesCoord(arr, row, col) {
       return arr.some(([r, c]) => r === Number(row) && c === Number(col));
     }
-  
+
+    const conmplementary = rgb => {
+      const [r, g, b] = rgb.map(v => 255 - v);
+      return `rgb(${r}, ${g}, ${b})`;
+    }
+
     try {
       const res = await fetch('');
       if (!res.ok) throw new Error('res.ng');
-  
+
       const text = await res.text();
       const doc = new DOMParser().parseFromString(text, 'text/html');
       const h1 = doc?.querySelector('h1')?.textContent;
       if (h1 !== 'どんぐりチーム戦い') throw new Error('title.ng info');
-  
+
       const currentCells = grid.querySelectorAll('.cell');
       const scriptContent = doc.querySelector('.grid > script').textContent;
-  
+
       const cellColorsString = scriptContent.match(/const cellColors = ({.+?})/s)[1];
       const validJsonStr = cellColorsString.replace(/'/g, '"').replace(/,\s*}/, '}');
       const cellColors = JSON.parse(validJsonStr);
@@ -1610,12 +1615,12 @@
       const newGrid = doc.querySelector('.grid');
       const rows = Number(newGrid.style.gridTemplateRows.match(/repeat\((\d+), 35px\)/)[1]);
       const cols = Number(newGrid.style.gridTemplateColumns.match(/repeat\((\d+), 35px\)/)[1]);
-  
+
       if (currentCells.length !== rows * cols) {
         grid.style.gridTemplateRows = newGrid.style.gridTemplateRows;
         grid.style.gridTemplateColumns = newGrid.style.gridTemplateColumns;
         grid.innerHTML = '';
-  
+
         for (let i = 0; i < rows; i++) {
           for (let j = 0; j < cols; j++) {
             const cell = document.createElement('div');
@@ -1627,28 +1632,37 @@
             cell.style.border = '1px solid #ccc';
             cell.style.cursor = 'pointer';
             cell.style.transition = 'background-color 0.3s';
-            cell.style.outline = includesCoord(capitalMap, i, j) ? 'gold solid 2px' : '';
-   
+
+            if (includesCoord(capitalMap, i, j)) {
+              cell.style.outline = 'black solid 2px';
+              cell.style.borderColor = 'gold';
+            } else {
+              cell.style.outline = '';
+            }
             const cellKey = `${i}-${j}`;
+            /*
+            const rgb = cellColors[cellKey].match(/[0-9a-fA-F]{2}/g);
+            cell.style.outline = includesCoord(capitalMap, i, j) ? `${getOutlineColor(rgb)} solid 2px` : '';
+            */
             if (cellColors[cellKey]) {
               cell.style.backgroundColor = cellColors[cellKey];
             } else {
               cell.style.backgroundColor = '#ffffff00';
             }
-  
+
             grid.appendChild(cell);
             refreshedCells.push(cell);
           }
         }
       } else {
         currentCells.forEach(cell => {
-          const { row, col }  = cell.dataset;
+          const { row, col } = cell.dataset;
           const cellKey = `${row}-${col}`;
 
           const cellColorCode = '#' + cell.style.backgroundColor.match(/\d+/g)
             .map(v => Number(v).toString(16).toLowerCase().padStart(2, '0'))
             .join('');
-  
+
           if (cellColors[cellKey]) {
             if (cellColorCode !== cellColors[cellKey].toLowerCase()) {
               cell.style.backgroundColor = cellColors[cellKey];
@@ -1658,15 +1672,23 @@
             cell.style.backgroundColor = '#ffffff00';
             refreshedCells.push(cell);
           }
-          
-          const rgb = cell.style.backgroundColor.match(/\d+/g);
+
+          const rgb = cell.style.backgroundColor.match(/\d+/g).map(Number);
           const brightness = 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
           cell.style.color = brightness > 128 ? '#000' : '#fff';
 
-          cell.style.outline = includesCoord(capitalMap, row, col) ? 'gold solid 2px' : '';
+          if (includesCoord(capitalMap, row, col)) {
+            cell.style.outline = 'black solid 2px';
+            cell.style.borderColor = 'gold';
+          } else {
+            cell.style.outline = '';
+            cell.style.borderColor = '#ccc';
+          }
+
+          // cell.style.outline = includesCoord(capitalMap, row, col) ? `${getOutlineColor(rgb)} solid 2px` : '';
         });
       }
-  
+
       const tables = document.querySelectorAll('table');
       const newTables = doc.querySelectorAll('table');
       newTables.forEach((table, i) => {
@@ -1678,7 +1700,7 @@
       console.error(e);
     }
   }
-  
+
   async function fetchAreaInfo(refreshAll){
     const refreshedCells = await refreshArenaInfo();
     if (currentViewMode === 'detail') {
@@ -1687,7 +1709,7 @@
     }
     grid.parentNode.style.height = null;
     grid.parentNode.style.padding = '20px 0';
-    
+
 
     const cells = grid.querySelectorAll('.cell');
     cells.forEach(elm => {
@@ -1747,7 +1769,7 @@
             const rgb = cell.style.backgroundColor.match(/\d+/g);
             const brightness = 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
             cell.style.color = brightness > 128 ? '#000' : '#fff';
-  
+
             cell.addEventListener('click', ()=>{
               handleCellClick (cell);
             });
@@ -1757,7 +1779,6 @@
       }
     })
   }
-
 
   function addCustomColor() {
     const teamTable = document.querySelector('table');
@@ -1877,7 +1898,7 @@
   const observer = new MutationObserver(() => {
     scaleContentsToFit(grid.parentNode, grid);
   });
-  
+
   observer.observe(grid, { attributes: true, childList: true, subtree: true });
 
   (()=>{
@@ -1891,7 +1912,7 @@
   })();
 
   async function fetchArenaTable(row, col){
-    const url = `https://donguri.5ch.net/teambattle?r=${row}&c=${col}`; 
+    const url = `https://donguri.5ch.net/teambattle?r=${row}&c=${col}`;
     try {
       const res = await fetch(url);
       if(!res.ok) throw new Error('res.ng');
@@ -1905,7 +1926,7 @@
     } catch (e) {
       console.error(e);
     }
-    
+
     function showArenaTable (table){
       const tableRow = table.querySelector('tbody > tr');
       if(!tableRow) return;
@@ -2169,7 +2190,7 @@
       }
       return value;
     }
-  
+
     const logArea = dialog.querySelector('.auto-join-log');
     const headers = { 'Content-Type': 'application/x-www-form-urlencoded' };
     const regions = [];
@@ -2179,7 +2200,7 @@
       }
       regions.push([i, i]);
     }
-  
+
     function logMessage(region, next, message) {
       const date = new Date();
       const ymd = date.toLocaleDateString('sv-SE').slice(2);
@@ -2212,7 +2233,7 @@
       div.append(timestamp, regionDiv, messageDiv);
       logArea.prepend(div);
     }
-  
+
     const messageType = {
       success: [
         'アリーナチャレンジは失敗しました。',
@@ -2277,7 +2298,7 @@
       challenge();
     }
   };
-  
+
   function drawProgressBar(){
     fetch('https://donguri.5ch.net/')
     .then(res => res.ok ? res.text() : Promise.reject('res.ng'))
@@ -2357,9 +2378,9 @@
         }
       }
     });
-    
+
     observer.observe(dialog, {
-      attributes: true, 
+      attributes: true,
       attributeFilter: ['open']
     });
   })();
