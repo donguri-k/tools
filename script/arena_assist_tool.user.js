@@ -1001,7 +1001,7 @@
       const link = document.createElement('a');
       link.style.color = '#666';
       link.style.textDecoration = 'underline';
-      link.textContent = 'arena assist tool - v1.2.1a';
+      link.textContent = 'arena assist tool - v1.2.1b';
       link.href = 'https://donguri-k.github.io/tools/arena-assist-tool';
       link.target = '_blank';
       const author = document.createElement('input');
@@ -2106,8 +2106,11 @@
       .replace('エリート','e')
       .replace(/.+から|\w+-|まで|だけ|\s|\[|\]/g,'');
     const autoEquipItems = JSON.parse(localStorage.getItem('autoEquipItems')) || {};
-    if (autoEquipItems[rank] && !autoEquipItems[rank].includes(currentEquipName)) {
-      if (autoEquipItems[rank].length === 1) {
+    if (autoEquipItems[rank] && !autoEquipItems[rank]?.includes(currentEquipName)) {
+      if (autoEquipItems[rank].length === 0) {
+        arenaChallenge(row, col);
+        return;
+      } else if (autoEquipItems[rank].length === 1) {
         await setPresetItems(autoEquipItems[rank]);
         arenaChallenge(row, col);
         return;
