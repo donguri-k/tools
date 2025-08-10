@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         donguri arena assist tool
-// @version      1.2.1a
+// @version      1.2.1c
 // @description  fix arena ui and add functions
 // @author       7234e634
 // @match        https://donguri.5ch.net/teambattle
@@ -29,7 +29,6 @@
     return;
   }
 
-  let currentEquipName = '';
   const vw = Math.min(document.documentElement.clientWidth, window.innerWidth || 0);
   const vh = Math.min(document.documentElement.clientHeight, window.innerHeight || 0);
 
@@ -75,7 +74,8 @@
   toolbar.append(progressBarContainer);
 
   // add buttons and select to custom menu
-  let shouldSkipAreaInfo, cellSelectorActivate, rangeAttackProcessing;
+  let shouldSkipAreaInfo, shouldSkipAutoEquip, cellSelectorActivate, rangeAttackProcessing;
+  let currentEquipName = '';
   (()=>{
     const button = document.createElement('button');
     button.type = 'button';
@@ -87,6 +87,7 @@
     button.style.padding = '2px';
     button.style.width = '6em';
     button.style.fontSize = '65%';
+    button.style.border = 'none';
 
     if (vw < 768) {
       progressBarContainer.style.fontSize = '60%';
@@ -111,32 +112,49 @@
       toggleCellViewMode();
     })
 
-    const cellButton = button.cloneNode();
-    cellButton.innerText = 'エリア情報\n再取得';
-    cellButton.addEventListener('click',()=>{
-      fetchAreaInfo(true);
-    });
-
+    
     const refreshButton = button.cloneNode();
     refreshButton.innerText = 'エリア情報\n更新';
     refreshButton.addEventListener('click',()=>{
       fetchAreaInfo(false);
     });
-
+    
+    const skipAreaInfoButton = button.cloneNode();
+    skipAreaInfoButton.innerText = 'セル情報\nスキップ';
+    skipAreaInfoButton.style.color = '#fff';
+    if (settings.skipArenaInfo) {
+      skipAreaInfoButton.style.background = '#46f';
+      shouldSkipAreaInfo = true;
+    } else {
+      skipAreaInfoButton.style.background = '#888';
+      shouldSkipAreaInfo = false;
+    }
+    skipAreaInfoButton.addEventListener('click', ()=>{
+      if(shouldSkipAreaInfo) {
+        skipAreaInfoButton.style.background = '#888';
+        shouldSkipAreaInfo = false;
+      } else {
+        skipAreaInfoButton.style.background = '#46f';
+        shouldSkipAreaInfo = true;
+      }
+      settings.skipArenaInfo = shouldSkipAreaInfo;
+      localStorage.setItem('aat_settings', JSON.stringify(settings));
+    });
+    
+    
     const subMenu = document.createElement('div');
     subMenu.style.display = 'none';
     subMenu.style.flexWrap = 'nowrap';
     subMenu.style.overflowX = 'hidden';
     subMenu.style.position = 'relative';
-
+    
     (()=>{
       const subButton = button.cloneNode();
       subButton.style.fontSize = '65%';
       subButton.style.width = '6em';
       subButton.style.border = 'none';
       subButton.style.padding = '2px';
-
-
+      
       const div = document.createElement('div');
       div.style.display = 'flex';
       div.style.flex = '1';
@@ -145,7 +163,35 @@
       div.style.overflowX = 'auto';
       div.style.height = '100%';
 
-
+      const cellButton = subButton.cloneNode();
+      cellButton.innerText = 'エリア情報\n再取得';
+      cellButton.addEventListener('click',()=>{
+        fetchAreaInfo(true);
+      });
+      
+      const skipAutoEquipButton = subButton.cloneNode();
+      skipAutoEquipButton.textContent = '自動装備';
+      skipAutoEquipButton.style.color = '#fff';
+      skipAutoEquipButton.classList.add('skip-auto-equip');
+      if (settings.skipAutoEquip) {
+        skipAutoEquipButton.style.background = '#888';
+        shouldSkipAutoEquip = true;
+      } else {
+        skipAutoEquipButton.style.background = '#46f';
+        shouldSkipAutoEquip = false;
+      }
+      skipAutoEquipButton.addEventListener('click', ()=>{
+        if (shouldSkipAutoEquip) {
+          skipAutoEquipButton.style.background = '#46f';
+          shouldSkipAutoEquip = false;
+        } else {
+          skipAutoEquipButton.style.background = '#888';
+          shouldSkipAutoEquip = true;
+        }
+        settings.skipAutoEquip = shouldSkipAutoEquip;
+        localStorage.setItem('aat_settings', JSON.stringify(settings));
+      });
+      
       const slideMenu = document.createElement('div');
       slideMenu.style.display = 'flex';
       slideMenu.style.flex = '1';
@@ -157,29 +203,8 @@
       slideMenu.style.right = '-100%';
       slideMenu.style.background = '#fff';
       slideMenu.style.transition = 'transform 0.1s ease';
-
-      const skipAreaInfoButton = subButton.cloneNode();
-      skipAreaInfoButton.innerText = 'セル情報\nスキップ';
-      skipAreaInfoButton.style.color = '#fff';
-      if (settings.skipArenaInfo) {
-        skipAreaInfoButton.style.background = '#46f';
-        shouldSkipAreaInfo = true;
-      } else {
-        skipAreaInfoButton.style.background = '#888';
-        shouldSkipAreaInfo = false;
-      }
-      skipAreaInfoButton.addEventListener('click', ()=>{
-        if(shouldSkipAreaInfo) {
-          skipAreaInfoButton.style.background = '#888';
-          shouldSkipAreaInfo = false;
-        } else {
-          skipAreaInfoButton.style.background = '#46f';
-          shouldSkipAreaInfo = true;
-        }
-        settings.skipArenaInfo = shouldSkipAreaInfo;
-        localStorage.setItem('aat_settings', JSON.stringify(settings));
-      })
-
+      
+      
       const autoJoinButton = subButton.cloneNode();
       autoJoinButton.innerText = '自動参加\nモード';
       autoJoinButton.style.background = '#ffb300';
@@ -198,7 +223,7 @@
       autoJoinDialog.style.marginTop = '2vh';
       autoJoinDialog.classList.add('auto-join');
       document.body.append(autoJoinDialog);
-
+      
       //autoJoin
       (()=>{
         const container = document.createElement('div');
@@ -387,7 +412,7 @@
         batchSelectMenu.prepend(closeButton);
       })();
 
-      div.append(skipAreaInfoButton, rangeAttackButton, autoJoinButton, settingsButton);
+      div.append(skipAutoEquipButton, rangeAttackButton, autoJoinButton, settingsButton, cellButton);
       slideMenu.append(closeSlideMenuButton, startRangeAttackButton, pauseRangeAttackButton, resumeRangeAttackButton, batchSelectButton, deselectButton, batchSelectMenu);
       subMenu.append(div, slideMenu);
 
@@ -398,7 +423,7 @@
     main.style.flexWrap = 'nowrap';
     main.style.gap = '2px';
     main.style.justifyContent = 'center';
-    main.append(menuButton, equipButton, toggleViewButton, refreshButton, cellButton);
+    main.append(menuButton, skipAreaInfoButton, equipButton, toggleViewButton, refreshButton);
 
     toolbar.append(main, subMenu);
   })();
@@ -1001,7 +1026,7 @@
       const link = document.createElement('a');
       link.style.color = '#666';
       link.style.textDecoration = 'underline';
-      link.textContent = 'arena assist tool - v1.2.1b';
+      link.textContent = 'arena assist tool - v1.2.1c';
       link.href = 'https://donguri-k.github.io/tools/arena-assist-tool';
       link.target = '_blank';
       const author = document.createElement('input');
@@ -1116,6 +1141,11 @@
       const presetName = presetLi.querySelector('span').textContent;
       if(currentMode === 'equip') {
         setPresetItems(presetName);
+        const skipAutoEquipButton = document.querySelector('.skip-auto-equip');
+        skipAutoEquipButton.style.background = '#888';
+        shouldSkipAutoEquip = true;
+        settings.skipAutoEquip = true;
+        localStorage.setItem('aat_settings', JSON.stringify(settings));
       } else if (currentMode === 'remove') {
         removePresetItems(presetName);
       } else if (currentMode === 'auto') {
@@ -1220,7 +1250,7 @@
         div.append(closeButton);
         
         const description = document.createElement('div');
-        description.textContent = '対戦に使用する装備を選択してください。バトル開始前に自動的に装備を変更します。複数登録した場合は開始時に装備するものを選択します。';
+        description.innerText = '対戦に使用する装備を選択してください。バトル開始前に自動的に装備を変更します。複数登録した場合は開始時に装備するものを選択します。\nヒント: メインとなる1つのセットを使うことがほとんどなら1つのみ登録／複数の装備を使い分けることが多いなら複数登録しておくと切り替えの手間が少なくなる。';
         description.style.fontSize = '70%';
         
         equipSettingsDialog.append(div, description);
@@ -2102,6 +2132,10 @@
   autoEquipDialog.style.background = '#fff';
   document.body.append(autoEquipDialog);
   async function autoEquipAndChallenge (row, col, rank) {
+    if (shouldSkipAutoEquip) {
+      arenaChallenge(row, col);
+      return;
+    }
     rank = rank
       .replace('エリート','e')
       .replace(/.+から|\w+-|まで|だけ|\s|\[|\]/g,'');
