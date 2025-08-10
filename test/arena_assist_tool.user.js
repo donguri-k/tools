@@ -146,42 +146,19 @@
       localStorage.setItem('aat_settings', JSON.stringify(settings));
     });
     
-    const skipAutoEquipButton = button.cloneNode();
-    skipAutoEquipButton.textContent = '自動装備';
-    skipAutoEquipButton.style.color = '#fff';
-    skipAutoEquipButton.classList.add('skip-auto-equip');
-    if (settings.skipAutoEquip) {
-      skipAutoEquipButton.style.background = '#888';
-      shouldSkipAutoEquip = true;
-    } else {
-      skipAutoEquipButton.style.background = '#46f';
-      shouldSkipAutoEquip = false;
-    }
-    skipAutoEquipButton.addEventListener('click', ()=>{
-      if (shouldSkipAutoEquip) {
-        skipAutoEquipButton.style.background = '#46f';
-        shouldSkipAutoEquip = false;
-      } else {
-        skipAutoEquipButton.style.background = '#888';
-        shouldSkipAutoEquip = true;
-      }
-      settings.skipAutoEquip = shouldSkipAutoEquip;
-      localStorage.setItem('aat_settings', JSON.stringify(settings));
-    });
-
+    
     const subMenu = document.createElement('div');
     subMenu.style.display = 'none';
     subMenu.style.flexWrap = 'nowrap';
     subMenu.style.overflowX = 'hidden';
     subMenu.style.position = 'relative';
-
+    
     (()=>{
       const subButton = button.cloneNode();
       subButton.style.fontSize = '65%';
       subButton.style.width = '6em';
       subButton.style.border = 'none';
       subButton.style.padding = '2px';
-
 
       const div = document.createElement('div');
       div.style.display = 'flex';
@@ -190,8 +167,30 @@
       div.style.gap = '2px';
       div.style.overflowX = 'auto';
       div.style.height = '100%';
-
-
+      
+      const skipAutoEquipButton = subButton.cloneNode();
+      skipAutoEquipButton.textContent = '自動装備';
+      skipAutoEquipButton.style.color = '#fff';
+      skipAutoEquipButton.classList.add('skip-auto-equip');
+      if (settings.skipAutoEquip) {
+        skipAutoEquipButton.style.background = '#888';
+        shouldSkipAutoEquip = true;
+      } else {
+        skipAutoEquipButton.style.background = '#46f';
+        shouldSkipAutoEquip = false;
+      }
+      skipAutoEquipButton.addEventListener('click', ()=>{
+        if (shouldSkipAutoEquip) {
+          skipAutoEquipButton.style.background = '#46f';
+          shouldSkipAutoEquip = false;
+        } else {
+          skipAutoEquipButton.style.background = '#888';
+          shouldSkipAutoEquip = true;
+        }
+        settings.skipAutoEquip = shouldSkipAutoEquip;
+        localStorage.setItem('aat_settings', JSON.stringify(settings));
+      });
+      
       const slideMenu = document.createElement('div');
       slideMenu.style.display = 'flex';
       slideMenu.style.flex = '1';
@@ -203,8 +202,8 @@
       slideMenu.style.right = '-100%';
       slideMenu.style.background = '#fff';
       slideMenu.style.transition = 'transform 0.1s ease';
-
-
+      
+      
       const autoJoinButton = subButton.cloneNode();
       autoJoinButton.innerText = '自動参加\nモード';
       autoJoinButton.style.background = '#ffb300';
@@ -223,7 +222,7 @@
       autoJoinDialog.style.marginTop = '2vh';
       autoJoinDialog.classList.add('auto-join');
       document.body.append(autoJoinDialog);
-
+      
       //autoJoin
       (()=>{
         const container = document.createElement('div');
@@ -412,7 +411,7 @@
         batchSelectMenu.prepend(closeButton);
       })();
 
-      div.append(rangeAttackButton, autoJoinButton, settingsButton, cellButton);
+      div.append(skipAutoEquipButton, rangeAttackButton, autoJoinButton, settingsButton, cellButton);
       slideMenu.append(closeSlideMenuButton, startRangeAttackButton, pauseRangeAttackButton, resumeRangeAttackButton, batchSelectButton, deselectButton, batchSelectMenu);
       subMenu.append(div, slideMenu);
 
@@ -423,7 +422,7 @@
     main.style.flexWrap = 'nowrap';
     main.style.gap = '2px';
     main.style.justifyContent = 'center';
-    main.append(menuButton, skipAreaInfoButton, skipAutoEquipButton, equipButton, toggleViewButton, refreshButton);
+    main.append(menuButton, skipAreaInfoButton, equipButton, toggleViewButton, refreshButton);
 
     toolbar.append(main, subMenu);
   })();
