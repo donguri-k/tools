@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         donguri arena assist tool
-// @version      1.2.2a
+// @version      1.2.2b
 // @description  fix arena ui and add functions
 // @author       7234e634
 // @match        https://donguri.5ch.net/teambattle
@@ -1105,7 +1105,7 @@
       const link = document.createElement('a');
       link.style.color = '#666';
       link.style.textDecoration = 'underline';
-      link.textContent = 'arena assist tool - v1.2.2a';
+      link.textContent = 'arena assist tool - v1.2.2b';
       link.href = 'https://donguri-k.github.io/tools/arena-assist-tool';
       link.target = '_blank';
       const author = document.createElement('input');
@@ -2698,7 +2698,7 @@
           }
           const next = `→ ${nextProgress}±5%`;
           isAutoJoinRunning = false;
-          logMessage(null, '攻撃可能なセルが見つかりませんでした。', next);
+          logMessage(null, '攻撃可能なタイルが見つかりませんでした。', next);
           return;
         }
       }
@@ -2883,7 +2883,7 @@
 
     }
     async function equipChange (region) {
-      const [ col, row ] = region;
+      const [ row, col ] = region;
       const url = `https://donguri.5ch.net/teambattle?r=${row}&c=${col}`; 
       try {
         const res = await fetch(url);
