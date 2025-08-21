@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         donguri arena assist tool
-// @version      1.2.1c
+// @version      1.2.2a
 // @description  fix arena ui and add functions
 // @author       7234e634
 // @match        https://donguri.5ch.net/teambattle
@@ -71,10 +71,38 @@
   header.querySelector('h4').style.display = 'none';
   header.append(toolbar);
   const progressBarContainer = document.createElement('div');
+  const progressBar = document.createElement('div');
+  const progressBarBody = document.createElement('div');
+  const progressBarInfo = document.createElement('p');
+  progressBar.classList.add('progress-bar');
+  progressBar.style.display = 'inline-block';
+  progressBar.style.width = '400px';
+  progressBar.style.maxWidth = '100vw';
+  progressBar.style.height = '20px';
+  progressBar.style.background = '#ccc';
+  progressBar.style.borderRadius = '8px';
+  progressBar.style.fontSize = '16px';
+  progressBar.style.overflow = 'hidden';
+  progressBar.style.marginTop = '5px';
+  progressBarBody.style.height = '100%';
+  progressBarBody.style.lineHeight = 'normal';
+  progressBarBody.style.background = '#428bca';
+  progressBarBody.style.textAlign = 'right';
+  progressBarBody.style.paddingRight = '5px';
+  progressBarBody.style.boxSizing = 'border-box';
+  progressBarBody.style.color = 'white';
+  progressBarInfo.style.marginTop = '0';
+  progressBarInfo.style.marginBottom = '0';
+  progressBarInfo.style.overflow = 'auto';
+  progressBarInfo.style.whiteSpace = 'nowrap';
+
+  progressBarContainer.append(progressBarInfo,progressBar);
+  progressBar.append(progressBarBody)
   toolbar.append(progressBarContainer);
 
   // add buttons and select to custom menu
-  let shouldSkipAreaInfo, shouldSkipAutoEquip, cellSelectorActivate, rangeAttackProcessing;
+  let shouldSkipAreaInfo, shouldSkipAutoEquip, cellSelectorActivate, rangeAttackProcessing,
+    currentPeriod, currentProgress;
   let currentEquipName = '';
   (()=>{
     const button = document.createElement('button');
@@ -211,6 +239,11 @@
       autoJoinButton.style.color = '#000';
       autoJoinButton.addEventListener('click',()=>{
         autoJoinDialog.showModal();
+        if (!settings.teamColor) {
+          autoJoinSettingsDialog.showModal();
+        } else {
+          startAutoJoin();
+        }
       })
 
       const autoJoinDialog = document.createElement('dialog');
@@ -223,6 +256,59 @@
       autoJoinDialog.style.marginTop = '2vh';
       autoJoinDialog.classList.add('auto-join');
       document.body.append(autoJoinDialog);
+      
+      const autoJoinSettingsDialog = document.createElement('dialog');
+      autoJoinSettingsDialog.style.background = '#fff';
+      autoJoinSettingsDialog.style.color = '#000';
+      autoJoinSettingsDialog.style.textAlign = 'left';
+      autoJoinDialog.append(autoJoinSettingsDialog);
+
+      (()=>{ // autoJoinSettingsDialog
+        const div = document.createElement('div');
+        const input = document.createElement('input');
+        const label = document.createElement('label');
+        label.style.display = 'flex';
+        label.style.width = '100%';
+        const span = document.createElement('span');
+        span.style.whiteSpace = 'nowrap';
+        span.style.width = '50%';
+        const span2 = document.createElement('span');
+        span2.style.width = '50%';
+        const closeButton = document.createElement('button');
+        closeButton.type = 'button';
+        closeButton.textContent = 'OK';
+        closeButton.addEventListener('click',()=>{
+          autoJoinSettingsDialog.close();
+          startAutoJoin();
+        })
+        
+        const inputs = {
+          teamName: [input.cloneNode(),'チーム名'],
+          teamColor: [input.cloneNode(),'チームカラー']
+        }
+        for (const key of Object.keys(inputs)) {
+          const label_ = label.cloneNode();
+          const span_ = span.cloneNode();
+          const span2_ = span2.cloneNode();
+          span_.textContent = inputs[key][1];
+          span2_.append(inputs[key][0]);
+          label_.append(span_, span2_);
+          div.append(label_);
+
+          inputs[key][0].value = settings[key] || '';
+          inputs[key][0].addEventListener('input', ()=>{
+            inputs.teamColor[0].value = inputs.teamColor[0].value.replace(/[^0-9a-fA-F]/g,'');
+            settings[key] = inputs[key][0].value;
+            localStorage.setItem('aat_settings',JSON.stringify(settings));
+          })        
+        }
+
+        const description = document.createElement('p');
+        description.style.fontSize = '90%';
+        description.innerText = 'チームカラーは小文字/大文字も正確に入力してください。\nあらかじめ装備パネルからエリートも含め各ランクの装備を登録してください（所持していない場合は除く。）\n装備を登録していないと成功率が低下します。'
+        div.append(description,closeButton);
+        autoJoinSettingsDialog.append(div);
+      })();
       
       //autoJoin
       (()=>{
@@ -240,35 +326,28 @@
         log.style.textAlign = 'left';
         log.classList.add('auto-join-log');
 
-        const label = document.createElement('label');
-        const intervalInput = document.createElement('input');
-        intervalInput.type = 'number';
-        intervalInput.placeholder = '600';
-        intervalInput.style.width = '80px';
-        intervalInput.style.background = '#fff';
-        intervalInput.style.color = '#000';
-        label.append(intervalInput, '秒');
-        intervalInput.value = settings.autoJoinInterval || '';
-        intervalInput.addEventListener('input', ()=>{
-          const interval = intervalInput.valueAsNumber;
-          settings.autoJoinInterval = interval > 600 ? interval : 600;
-          localStorage.setItem('aat_settings', JSON.stringify(settings))
+        const settingsButton = document.createElement('button');
+        settingsButton.textContent = '設定';
+        settingsButton.addEventListener('click', ()=>{
+          autoJoinSettingsDialog.showModal();
+          clearInterval(autoJoinIntervalId);
         })
-
         const closeButton = document.createElement('button');
         closeButton.style.fontSize = '100%';
         closeButton.textContent = '自動参加モードを終了';
         closeButton.addEventListener('click', ()=>{
           autoJoinDialog.close();
         })
-        closeButton.autofocus = true; // inputへのオートフォーカス阻止
+        //closeButton.autofocus = true; // inputへのオートフォーカス阻止
         const p = document.createElement('p');
-        p.textContent = 'この画面を開いたままにしておくこと。最短600秒';
+        //p.textContent = 'この画面を開いたままにしておくこと。最短600秒';
+        p.textContent = 'この画面を開いたままにしておくこと';
         p.style.margin = '0';
 
-        container.append(log, label, p, closeButton);
+        container.append(log, p, settingsButton, closeButton);
         autoJoinDialog.append(container);
       })();
+
 
       const settingsButton = subButton.cloneNode();
       settingsButton.textContent = '設定';
@@ -1026,7 +1105,7 @@
       const link = document.createElement('a');
       link.style.color = '#666';
       link.style.textDecoration = 'underline';
-      link.textContent = 'arena assist tool - v1.2.1c';
+      link.textContent = 'arena assist tool - v1.2.2a';
       link.href = 'https://donguri-k.github.io/tools/arena-assist-tool';
       link.target = '_blank';
       const author = document.createElement('input');
@@ -1336,7 +1415,6 @@
             for(const li of presetList.querySelectorAll('li')) {
               li.style.color = 'rgb(66, 139, 202)';
             }
-            console.log('color reset');
           }
         }
         currentMode = 'equip';
@@ -1683,7 +1761,7 @@
       const texts = await Promise.all(
         responses.map(async response => {
           if (!response.ok) {
-            throw new Error('読み込み失敗');
+            throw new Error(`[${response.status}] /equip/`);
           }
           return response.text();
         })
@@ -1708,6 +1786,7 @@
     } catch (e) {
       stat.textContent = e;
       localStorage.removeItem('current_equip');
+      throw e;
     }
   }
 
@@ -2367,31 +2446,19 @@
     }
   }
 
-  let challengeTimeoutId;
+  let autoJoinIntervalId;
   let isAutoJoinRunning = false;
-  function autoJoin() {
+  const sleep = s => new Promise(r=>setTimeout(r,s));
+  async function autoJoin() {
     const dialog = document.querySelector('.auto-join');
-    const interval = () => {
-      const input = dialog.querySelector('input');
-      let value = Number(input.value);
-      if (!value || value < 600) {
-        input.value = 600;
-        value = 600;
-      }
-      return value;
-    }
 
     const logArea = dialog.querySelector('.auto-join-log');
     const headers = { 'Content-Type': 'application/x-www-form-urlencoded' };
-    const regions = [];
-    for (let i = 0; i < 20; i++) {
-      for (let j = i - 1; j >= 0; j--) {
-        regions.push([i, j], [j, i]);
-      }
-      regions.push([i, i]);
-    }
+    const teamColor = settings.teamColor;
+    const teamName = settings.teamName;
 
-    function logMessage(region, next, message) {
+
+    function logMessage(region, message, next) {
       const date = new Date();
       const ymd = date.toLocaleDateString('sv-SE').slice(2);
       const time = date.toLocaleTimeString('sv-SE');
@@ -2403,7 +2470,9 @@
       timestamp.style.whiteSpace = 'nowrap';
 
       const regionDiv = document.createElement('div');
-      regionDiv.innerText = `challenge: ${region}\n${next}`;
+      const progress = `${currentPeriod}期 ${currentProgress}%`;
+      if (region) regionDiv.innerText = `${progress}\nchallenge: ${region}\n${next}`;
+      else regionDiv.innerText = next;
       regionDiv.style.fontSize = '90%';
       regionDiv.style.color = '#444';
       regionDiv.style.borderRight = 'dotted 0.5px #888';
@@ -2424,26 +2493,218 @@
       logArea.prepend(div);
     }
 
-    const messageType = {
-      success: [
-        'アリーナチャレンジは失敗しました。',
-        'リーダーになった'
-      ],
+    const messageTypes = {
       retry: [
         'あなたのチームは動きを使い果たしました。しばらくお待ちください。',
         'ng<>too fast',
-        'res.ng'
       ],
       reset: [
-        'No region',
+        'このタイルは攻撃できません。範囲外です。',
       ],
       quit: [
-        '武器と防具を装備しなければなりません。',
         '最初にチームに参加する必要があります。',
-        'どんぐりが見つかりませんでした。'
+        'どんぐりが見つかりませんでした。',
+        'あなたのどんぐりが理解できませんでした。',
+        'レベルが低すぎます。'
+      ],
+      equipError: [
+        '武器と防具を装備しなければなりません。',
+        '装備している防具と武器が力不足です。',
+        '装備している防具と武器が強すぎます',
+        '装備しているものは改造が多すぎます。改造の少ない他のものをお試しください'
+      ],
+      nonAdjacent: [
+        'このタイルは攻撃できません。あなたのチームが首都を持つまで、どの首都にも隣接するタイルを主張することはできません。',
+        'あなたのチームは首都を持っていないため、他のチームの首都に攻撃できません。'
+      ],
+      teamAdjacent: [
+        'このタイルは攻撃できません。あなたのチームの制御領土に隣接していなければなりません。',
+        // 'このタイルは攻撃できません。首都を奪取するには、隣接タイルを3つ以上支配している必要があります。',
+        'このタイルは攻撃できません。首都を奪取するには、隣接タイルを少なくとも3つ支配している必要があります。',
+        'このタイルは攻撃できません。首都を奪取するには、隣接タイルを少なくとも2つ支配している必要があります。',
+        'このタイルは攻撃できません。自分の首都は攻撃できません。'
+      ],
+      capitalAdjacent: [
+        'このタイルは攻撃できません。混雑したマップでは、初期主張は正確に1つの首都に隣接していなければなりません。'
+      ],
+      mapEdge: [
+        'このタイルは攻撃できません。混雑したマップでは、初期主張はマップの端でなければなりません。'
       ]
     }
-    function challenge(index = 0) {
+
+    function getMessageType (text) {
+      const result = Object.keys(messageTypes)
+        .find(key => messageTypes[key]
+          .some(v => text.includes(v))
+        )
+      return result;
+    }
+
+
+    let nextProgress;
+    async function attackRegion () {
+      await drawProgressBar();
+      if (isAutoJoinRunning || Math.abs(nextProgress - currentProgress) >= 5) {
+        return;
+      }
+      let regions = await getRegions();
+      const excludeSet = new Set();
+      
+      let cellType;
+      if (regions.nonAdjacent.length > 0) {
+        cellType = 'nonAdjacent';
+      } else if (regions.teamAdjacent.length > 0) {
+        cellType = 'teamAdjacent';
+      } else {
+        cellType = 'capitalAdjacent';
+      }
+
+
+      while(dialog.open) {
+        let success = false;
+        isAutoJoinRunning = true;
+
+        regions[cellType] = regions[cellType]
+          .filter(e => !excludeSet.has(e.join(',')));
+        console.log(excludeSet)
+        for (const region of regions[cellType]) {
+          let errorCount = 0;
+          let next;
+          try {
+            const [cellRank, equipChangeStat] = await equipChange(region);
+            if (equipChangeStat === 'noEquip') {
+              excludeSet.add(region.join(','));
+              continue;
+            }
+
+            const [ text, lastLine ] = await challenge(region);
+            const messageType = getMessageType(lastLine);
+            let message = lastLine;
+            let processType;
+            let sleepTime = 2;
+
+            if (text.startsWith('アリーナチャレンジ開始')
+              || text.startsWith('リーダーになった')
+            ) {
+              success = true;
+              message = '[成功] ' + lastLine;
+              processType = 'return';
+            } else if (messageType === 'retry') {
+              sleepTime = 20;
+              processType = 'continue';
+            } else if (messageType === 'equipError'){
+              processType = 'continue';
+              message += ` (${cellRank}, ${currentEquipName})`;
+            } else if (lastLine.length > 100) {
+              message = 'どんぐりシステム';
+              processType = 'continue';
+            } else if (messageType === 'quit') {
+              message = '[停止] ' + lastLine;
+              processType = 'return';
+              clearInterval(autoJoinIntervalId);
+            } else if (messageType === 'reset') {
+              processType = 'break';
+            } else if (messageType in regions) {
+              if (messageType === cellType) {
+                processType = 'continue';
+              } else if (messageType === 'nonAdjacent') {
+                cellType = 'nonAdjacent';
+                processType = 'break';
+              } else if (messageType === 'teamAdjacent') {
+                cellType = 'teamAdjacent';
+                processType = 'break';
+              } else if (messageType === 'capitalAdjacent') {
+                cellType = 'capitalAdjacent';
+                excludeSet.add(region.join(','));
+                processType = 'break';
+              } else if (messageType === 'mapEdge') {
+                cellType = 'mapEdge';
+                excludeSet.add(region.join(','));
+                processType = 'break';
+              }
+            }
+
+            if (success) {
+              if (currentProgress < 50) {
+                nextProgress = Math.floor(Math.random() * 10) + 70; // 70 ~ 80 +- 5
+              } else {
+                nextProgress = Math.floor(Math.random() * 10) + 20; // 20 ~ 30 +- 5
+              }
+              next = `→ ${nextProgress}±5%`;
+              isAutoJoinRunning = false;
+            } else if (processType === 'return') {
+              next = '';
+              isAutoJoinRunning = false;
+            } else {
+              next = `→ ${sleepTime}s`;
+            }
+
+            logMessage(region, message, next);
+            await sleep(sleepTime * 1000);
+
+            if (processType === 'break') {
+              regions = await getRegions();
+              break;
+            } else if (processType === 'return') {
+              return;
+            }
+          } catch (e){
+            let message = '';
+            switch (e) {
+              case 403:
+                message = `[403] Forbidden`;
+                break;
+              case 404:
+                message = `[404] Not Found`;
+                break;
+              case 500:
+                message = `[500] Internal Server Error`;
+                break;
+              case 502:
+                message = `[502] Bad Gateway`;
+                break;
+              default:
+                message = e;
+                break;
+            }
+            if (e.message === '再ログインしてください') {
+              logMessage(region, '[停止] どんぐりが見つかりませんでした', '');
+              isAutoJoinRunning = false;
+              clearInterval(autoJoinIntervalId);
+              return;
+            } else if (e === 403) {
+              logMessage(region, message, '');
+              isAutoJoinRunning = false;
+              clearInterval(autoJoinIntervalId);
+              return;
+            } else if ([404,500,502].includes(e)) {
+              errorCount++;
+              let sleepTime = 20 * errorCount;
+              if(sleepTime > 600) sleepTime = 600;
+              logMessage(region, message, `→ ${sleepTime}s`);
+              await sleep(sleepTime * 1000);
+            } else {
+              let sleepTime = 20;
+              logMessage(region, e, `→ ${sleepTime}s`);
+              await sleep(sleepTime * 1000);
+            }
+          }
+        }
+        if (!success && regions[cellType].length === 0) {
+          if (currentProgress < 50) {
+            nextProgress = Math.floor(Math.random() * 10) + 70; // 70 ~ 80 +- 5
+          } else {
+            nextProgress = Math.floor(Math.random() * 10) + 20; // 20 ~ 30 +- 5
+          }
+          const next = `→ ${nextProgress}±5%`;
+          isAutoJoinRunning = false;
+          logMessage(null, '攻撃可能なセルが見つかりませんでした。', next);
+          return;
+        }
+      }
+    }
+    /*
+    function _challenge(index = 0) {
       if(!dialog.open) return;
       const body = `row=${regions[index][0]}&col=${regions[index][1]}`;
       fetch('/teamchallenge', {
@@ -2451,15 +2712,15 @@
         body: body,
         headers: headers
       })
-        .then(response => response.ok ? response.text() : Promise.reject(`res.ng [${response.status}]`))
-        .catch(error => error)
-        .then(text => {
+      .then(response => response.ok ? response.text() : Promise.reject(`res.ng [${response.status}]`))
+      .catch(error => error)
+      .then(text => {
           const lastLine = text.trim().split('\n').pop();
           let message = lastLine;
           let nextStep = [0, interval()];
           if (lastLine.startsWith('装備している')
             || lastLine.includes('あなたのチームは首都を持っていないため、他のチームの首都に攻撃できません。')
-            || lastLine.includes('このマスには攻撃できません')
+          || lastLine.includes('このマスには攻撃できません')
           ) {
             // 装備している防具と武器が力不足です。
             // 装備している防具と武器が強すぎます
@@ -2478,89 +2739,240 @@
             message = 'どんぐりシステム';
             nextStep = [index, 2];
           }
-
+          
           logMessage(regions[index], `next(${nextStep[1]}s): ${regions[nextStep[0]]}`, message);
           challengeTimeoutId = setTimeout(() => challenge(nextStep[0]), 1000 * nextStep[1]);
         });
     }
-    if (!isAutoJoinRunning) {
-      isAutoJoinRunning = true;
-      challenge();
+    */
+    async function getRegions () {
+      try {
+        const res = await fetch('');
+        if (!res.ok) throw new Error(`[${res.status}] /teambattle`);
+        const text = await res.text();
+        const doc = new DOMParser().parseFromString(text, 'text/html');
+        const h1 = doc?.querySelector('h1')?.textContent;
+        if (h1 !== 'どんぐりチーム戦い') throw new Error('title.ng info');
+
+        const scriptContent = doc.querySelector('.grid > script').textContent;
+        const cellColorsString = scriptContent.match(/const cellColors = ({.+?})/s)[1];
+        const validJsonStr = cellColorsString.replace(/'/g, '"').replace(/,\s*}/, '}');
+        const cellColors = JSON.parse(validJsonStr);
+        const capitalMapString = scriptContent.match(/const capitalMap = (\[\[.+?\]\])/s)[1];
+        const capitalMap = JSON.parse(capitalMapString);
+
+        const grid = doc.querySelector('.grid');
+        const rows = Number(grid.style.gridTemplateRows.match(/repeat\((\d+), 35px\)/)[1]) -1;
+        const cols = Number(grid.style.gridTemplateColumns.match(/repeat\((\d+), 35px\)/)[1]) -1;
+
+        const cells = [];
+        for (let r = 0; r < rows; r++) {
+          for (let c = 0; c < cols; c++) {
+            cells.push([r, c]);
+          }
+        }
+
+        const directions = [
+          [-1, 0],
+          [1, 0],
+          [0, -1],
+          [0, 1]
+        ];
+
+        const adjacentSet = new Set();
+        for (const [cr, cc] of capitalMap) {
+          for (const [dr, dc] of directions) {
+            const nr = cr + dr;
+            const nc = cc + dc;
+            if (nr >= 0 && nr < rows && nc >= 0 && nc < cols) {
+              adjacentSet.add(`${nr}-${nc}`);
+            }
+          }
+        }
+
+        const capitalSet = new Set(capitalMap.map(([r, c]) => `${r}-${c}`));
+
+        const nonAdjacentCells = cells.filter(([r, c]) => {
+          const key = `${r}-${c}`;
+          return !capitalSet.has(key) && !adjacentSet.has(key);
+        });
+
+        const capitalAdjacentCells = cells.filter(([r, c]) => {
+          const key = `${r}-${c}`;
+          return adjacentSet.has(key);
+        })
+
+        const teamColorSet = new Set();
+        for(const [key, value] of Object.entries(cellColors)) {
+          if (teamColor === value.replace('#','')) {
+            teamColorSet.add(key);
+          }
+        }
+
+        const teamAdjacentSet = new Set();
+        for (const key of [...teamColorSet]) {
+          const [tr, tc] = key.split('-');
+          for (const [dr, dc] of directions) {
+            const nr = Number(tr) + dr;
+            const nc = Number(tc) + dc;
+            if (nr >= 0 && nr < rows && nc >= 0 && nc < cols) {
+              teamAdjacentSet.add(`${nr}-${nc}`);
+            }
+          }
+        }
+
+        const teamAdjacentCells = cells.filter(([r, c]) => {
+          const key = `${r}-${c}`;
+          return teamColorSet.has(key) || teamAdjacentSet.has(key);
+        })
+
+        const mapEdgeSet = new Set();
+        for (let i=0; i<rows; i++) {
+          mapEdgeSet.add(`${i}-0`);
+          mapEdgeSet.add(`${i}-${cols}`);
+        }
+        for (let i=0; i<cols; i++) {
+          mapEdgeSet.add(`0-${i}`);
+          mapEdgeSet.add(`${rows}-${i}`);
+        }
+
+        const mapEdgeCells = cells.filter(([r, c]) => {
+          const key = `${r}-${c}`;
+          return mapEdgeSet.has(key) && !capitalSet.has(key);
+        })
+
+        function shuffle(arr) {
+          for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+          }
+          return arr;
+        }
+
+        const regions = {
+          nonAdjacent: shuffle(nonAdjacentCells),
+          capitalAdjacent: shuffle(capitalAdjacentCells),
+          teamAdjacent: shuffle(teamAdjacentCells),
+          mapEdge: shuffle(mapEdgeCells)
+        }
+        return regions;
+      } catch (e) {
+        console.error(e);
+        return;
+      }
     }
+
+    async function challenge (region) {
+      const [ row, col ] = region;
+      const body = `row=${row}&col=${col}`;
+      try {
+        const res = await fetch('/teamchallenge', {
+          method: 'POST',
+          body: body,
+          headers: headers
+        })
+          
+        if(!res.ok) throw new Error(res.status);
+        const text = await res.text();
+        const lastLine = text.trim().split('\n').pop();
+        return [ text, lastLine ];
+      } catch (e) {
+        console.error(e);
+        throw e;
+      }
+
+    }
+    async function equipChange (region) {
+      const [ col, row ] = region;
+      const url = `https://donguri.5ch.net/teambattle?r=${row}&c=${col}`; 
+      try {
+        const res = await fetch(url);
+        if(!res.ok) throw new Error(`[${res.status}] /teambattle?r=${row}&c=${col}}`);
+        const text = await res.text();
+        const doc = new DOMParser().parseFromString(text,'text/html');
+        const h1 = doc?.querySelector('h1')?.textContent;
+        if(h1 !== 'どんぐりチーム戦い') return Promise.reject(`title.ng`);
+        const table = doc.querySelector('table');
+        if(!table) throw new Error('table.ng');
+        const equipCond = table.querySelector('td small').textContent;
+        const rank = equipCond
+          .replace('エリート','e')
+          .replace(/.+から|\w+-|まで|だけ|\s|\[|\]|\|/g,'');
+        const autoEquipItems = JSON.parse(localStorage.getItem('autoEquipItems')) || {};
+        if (autoEquipItems[rank]?.length > 0) {
+          await setPresetItems(autoEquipItems[rank]);
+          return [rank, 'success'];
+        } else {
+          return [rank, 'noEquip'];
+        }
+      } catch (e) {
+        console.error(e);
+        throw e;
+      }
+    }
+
+    if (!isAutoJoinRunning) {
+      attackRegion();
+    }
+    autoJoinIntervalId = setInterval(attackRegion,300000);
   };
 
-  function drawProgressBar(){
-    fetch('https://donguri.5ch.net/')
-    .then(res => res.ok ? res.text() : Promise.reject('res.ng'))
-    .then(text => {
-      const doc = new DOMParser().parseFromString(text, 'text/html'),
-      container = doc.querySelector('div.stat-block:nth-child(2)>div:nth-child(5)').cloneNode(true),
-      progressBar = container.lastElementChild,
-      barBody = progressBar.lastElementChild,
-      percentage = parseInt(barBody.textContent);
+  async function drawProgressBar(){
+    try {
+      const res = await fetch('https://donguri.5ch.net/');
+      if (!res.ok) throw new Error(res.status);
+      const text = await res.text();
+      const doc = new DOMParser().parseFromString(text, 'text/html');
+      const container = doc.querySelector('div.stat-block:nth-child(2)>div:nth-child(5)').cloneNode(true);
+      currentPeriod = Number(container.firstChild.textContent.match(/\d+/)[0]);
+      currentProgress = parseInt(container.lastElementChild.textContent);
       let str,min,totalSec,sec,margin;
-      if (percentage === 0 || percentage === 50) {
+
+      if (currentProgress === 0 || currentProgress === 50) {
         str = '（マップ更新時）';
       } else {
-        if (percentage === 100) {
+        if (currentProgress === 100) {
           min = 0;
           sec = 20;
           margin = 10;
         } else {
-          totalSec = (percentage < 50) ? (50 - percentage) * 36 : (100 - percentage) * 36 + 10;
+          totalSec = (currentProgress < 50) ? (50 - currentProgress) * 36 : (100 - currentProgress) * 36 + 10;
           min = Math.trunc(totalSec / 60);
           sec = totalSec % 60;
           margin = 20;
         }
         str = '（マップ更新まで' + min + '分' + sec + '秒 \xb1' + margin + '秒）';
       }
-      progressBar.before(str, document.createElement('br'));
-      progressBar.style.display = 'inline-block';
-      progressBar.style.width = '400px';
-      progressBar.style.maxWidth = '100vw';
-      progressBar.style.height = '20px';
-      progressBar.style.background = '#ccc';
-      progressBar.style.borderRadius = '8px';
-      progressBar.style.fontSize = '16px';
-      progressBar.style.overflow = 'hidden';
-      progressBar.style.marginTop = '5px';
-      barBody.style.height = '100%';
-      barBody.style.lineHeight = 'normal';
-      barBody.style.background = '#428bca';
-      barBody.style.textAlign = 'right';
-      barBody.style.paddingRight = '5px';
-      barBody.style.boxSizing = 'border-box';
-      barBody.style.color = 'white';
-      barBody.style.width = barBody.style.width;
-      progressBarContainer.replaceChildren(container);
+      progressBarBody.textContent = currentProgress + '%';
+      progressBarBody.style.width = currentProgress + '%';
+      progressBarInfo.textContent = `第 ${currentPeriod} 期${str}`;
 
       const statBlock = doc.querySelector('.stat-block');
       wood = statBlock.textContent.match(/木材の数: (\d+)/)[1];
       steel = statBlock.textContent.match(/鉄の数: (\d+)/)[1];
-    })
-    .catch(e => console.error(e))
+    } catch (e) {
+      console.error(e+' drawProgressBar()')
+    }
   }
 
   drawProgressBar();
+  function startAutoJoin() {
+    clearInterval(progressBarIntervalId);
+    progressBarIntervalId = null;
+    autoJoin();
+  }
+  let progressBarIntervalId = setInterval(drawProgressBar, 18000);
   (()=>{ // autoJoinとprogressBarのinterval管理
-    let progressBarIntervalId = setInterval(drawProgressBar, 18000);
     function stopAutoJoin() {
-      if (challengeTimeoutId) {
-        clearTimeout(challengeTimeoutId);
-        challengeTimeoutId = null;
+      if (autoJoinIntervalId) {
+        clearInterval(autoJoinIntervalId);
+        autoJoinIntervalId = null;
       }
       isAutoJoinRunning = false;
     }
-    function startAutoJoin() {
-      clearInterval(progressBarIntervalId);
-      progressBarIntervalId = null;
-      autoJoin();
-    }
     const dialog = document.querySelector('.auto-join');
     const observer = new MutationObserver(() => {
-      if (dialog.open) {
-        startAutoJoin();
-      } else {
+      if (!dialog.open) {
         stopAutoJoin();
         drawProgressBar();
         if (!progressBarIntervalId) {
