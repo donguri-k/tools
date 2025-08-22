@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         donguri arena assist tool
-// @version      1.2.2b
+// @version      1.2.2c
 // @description  fix arena ui and add functions
 // @author       7234e634
 // @match        https://donguri.5ch.net/teambattle
@@ -305,7 +305,7 @@
 
         const description = document.createElement('p');
         description.style.fontSize = '90%';
-        description.innerText = 'チームカラーは小文字/大文字も正確に入力してください。\nあらかじめ装備パネルからエリートも含め各ランクの装備を登録してください（所持していない場合は除く。）\n装備を登録していないと成功率が低下します。'
+        description.innerText = 'チームカラーは小文字/大文字も正確に入力してください。（自陣の隣接タイル取得に必要）\nあらかじめ装備パネルからエリートも含め各ランクの装備を登録してください。（所持していない場合は除く）\n※装備を登録していないと成功率が低下します。'
         div.append(description,closeButton);
         autoJoinSettingsDialog.append(div);
       })();
@@ -1105,7 +1105,7 @@
       const link = document.createElement('a');
       link.style.color = '#666';
       link.style.textDecoration = 'underline';
-      link.textContent = 'arena assist tool - v1.2.2b';
+      link.textContent = 'arena assist tool - v1.2.2c';
       link.href = 'https://donguri-k.github.io/tools/arena-assist-tool';
       link.target = '_blank';
       const author = document.createElement('input');
@@ -1189,6 +1189,7 @@
     
     let currentMode = 'equip';
     let currentRank = '';
+    let autoEquipMode = 'normal';
     const presetList = document.createElement('ul');
     presetList.style.listStyle = 'none';
     presetList.style.margin = '0';
@@ -1304,12 +1305,14 @@
             currentRank = rank;
             currentMode = 'auto';
             setMode('auto', equipSettingsButton);
-            const autoEquipItems = JSON.parse(localStorage.getItem('autoEquipItems')) || {};
-            if(autoEquipItems[rank]) {
+            
+            const target = autoEquipMode === 'autojoin' ? 'autoEquipItemsAutojoin' : 'autoEquipItems';
+            const items = JSON.parse(localStorage.getItem(target)) || {};
+            if(items[rank]) {
               const li = [...presetList.querySelectorAll('li')];
               const registeredItems = li.filter(elm => {
                 const name = elm.querySelector('span').textContent;
-                return autoEquipItems[rank].includes(name);
+                return items[rank].includes(name);
               })
               for(const e of registeredItems) {
                 e.style.color = 'rgb(202, 139, 66)';
@@ -1322,17 +1325,47 @@
 
         const closeButton = button.cloneNode();
         closeButton.style.width = '100px';
+        closeButton.style.background = '#caa';
         closeButton.textContent = '×';
         closeButton.addEventListener('click',()=>{
           equipSettingsDialog.close();
         })
+
+        const div2 = document.createElement('div');
+        div2.style.textAlign = 'center';
+        const toggleButton = button.cloneNode();
+        toggleButton.textContent = '対戦用';
+        toggleButton.style.width = '7em';
+        toggleButton.style.background = '#acc';
+        toggleButton.addEventListener('click',()=>{
+          if (autoEquipMode === 'normal') {
+            autoEquipMode = 'autojoin';
+            toggleButton.textContent = '自動参加用';
+          } else {
+            autoEquipMode = 'normal';
+            toggleButton.textContent = '対戦用';
+          }
+        })
+
+        const label = document.createElement('label');
+        label.style.fontSize = '80%';
+        const checkRandom = document.createElement('input');
+        checkRandom.type = 'checkbox';
+        if (settings.autoEquipRandomly) checkRandom.checked = true;
+        checkRandom.addEventListener('change', ()=>{
+          settings.autoEquipRandomly = checkRandom.checked;
+          localStorage.setItem('aat_settings', JSON.stringify(settings));
+        })
+        label.append(checkRandom, 'ランダム装備');
+
         div.append(closeButton);
+        div2.append(toggleButton,label);
         
         const description = document.createElement('div');
-        description.innerText = '対戦に使用する装備を選択してください。バトル開始前に自動的に装備を変更します。複数登録した場合は開始時に装備するものを選択します。\nヒント: メインとなる1つのセットを使うことがほとんどなら1つのみ登録／複数の装備を使い分けることが多いなら複数登録しておくと切り替えの手間が少なくなる。';
+        description.innerText = '対戦に使用する装備を選択してください。バトル開始前に自動的に装備を変更します。複数登録した場合は開始時に装備するものを選択します。\nヒント: メインとなる1つのセットを使うことがほとんどなら1つのみ登録／複数の装備を使い分けることが多いなら複数登録しておくと切り替えの手間が少なくなる。\nまたは、ランダム装備にチェックを入れると、登録してある中から自動でランダムに選択\n\n自動参加用を登録しておくと、通常の対戦用とは別の装備を使用する。登録していない場合は対戦用装備を使用。';
         description.style.fontSize = '70%';
         
-        equipSettingsDialog.append(div, description);
+        equipSettingsDialog.append(div, div2, description);
       })();
       
       const backupButton = button.cloneNode();
@@ -1356,7 +1389,22 @@
         saveButton.textContent = '保存';
         saveButton.addEventListener('click', ()=>{
           const isSuccess = importEquipPresets(textarea.value);
-          if(isSuccess) backupDialog.close();
+          if(isSuccess) {
+            backupDialog.close();
+            const equipPresets = JSON.parse(localStorage.getItem('equipPresets')) || {};
+            const autoEquipItems = JSON.parse(localStorage.getItem('autoEquipItems')) || {};
+            const autoEquipItemsAutojoin = JSON.parse(localStorage.getItem('autoEquipItemsAutojoin')) || {};
+
+            const validKeys = new Set(Object.keys(equipPresets));
+
+            for (const target of [autoEquipItems, autoEquipItemsAutojoin]) {
+              for (const key of Object.keys(target)) {
+                target[key] = target[key].filter(v => validKeys.has(v))
+              }
+            }
+            localStorage.setItem('autoEquipItems', JSON.stringify(autoEquipItems));
+            localStorage.setItem('autoEquipItemsAutojoin', JSON.stringify(autoEquipItemsAutojoin));
+          }
         });
         const copyButton = button.cloneNode();
         copyButton.textContent = 'コピー';
@@ -1371,8 +1419,8 @@
           if(data) {
             const json = JSON.parse(data);
             const formattedString = Object.entries(json)
-            .map(([key, value]) => {return `  "${key.replace(/"/g,'\\"')}": ${JSON.stringify(value)}`;})
-            .join(',\n');
+              .map(([key, value]) => {return `  "${key.replace(/"/g,'\\"')}": ${JSON.stringify(value)}`;})
+              .join(',\n');
             textarea.value = `{\n${formattedString}\n}`;
           }
           backupDialog.showModal();
@@ -1400,8 +1448,8 @@
         button.textContent = '完了';
         button.classList.add('active');
         if(mode === 'remove') stat.textContent = '削除したいものを選択';
-        else if (mode === 'edit') stat.textContent = 'クリックで編集(複数選択可)';
-        else if (mode === 'auto') stat.textContent = 'クリックで選択';
+        else if (mode === 'edit') stat.textContent = 'クリックで編集';
+        else if (mode === 'auto') stat.textContent = 'クリックで選択(複数選択可)';
       }
 
       function resetMode() {
@@ -1712,6 +1760,7 @@
       const stat = document.querySelector('.equip-preset-stat');
       const equipPresets = JSON.parse(localStorage.getItem('equipPresets')) || {};
       const autoEquipItems = JSON.parse(localStorage.getItem('autoEquipItems')) || {};
+      const autoEquipItemsAutojoin = JSON.parse(localStorage.getItem('autoEquipItemsAutojoin')) || {};
 
       if(!equipPresets || !equipPresets[presetName]) {
         stat.textContent = '';
@@ -1723,26 +1772,34 @@
           autoEquipItems[key] = autoEquipItems[key].filter(v => v !== presetName);
         }
       }
+      for (const key in autoEquipItemsAutojoin) {
+        if (Array.isArray(autoEquipItemsAutojoin[key])) {
+          autoEquipItemsAutojoin[key] = autoEquipItemsAutojoin[key].filter(v => v !== presetName);
+        }
+      }
       localStorage.setItem('equipPresets', JSON.stringify(equipPresets));
       localStorage.setItem('autoEquipItems', JSON.stringify(autoEquipItems));
+      localStorage.setItem('autoEquipItemsAutojoin', JSON.stringify(autoEquipItemsAutojoin));
       showEquipPreset();
     }
 
-    function selectAutoEquipItems(li, name, rank) {
-      const autoEquipItems = JSON.parse(localStorage.getItem('autoEquipItems')) || {};
+    function selectAutoEquipItems(li, name, rank) {      
+      const target = autoEquipMode === 'autojoin' ? 'autoEquipItemsAutojoin' : 'autoEquipItems';
+      const items = JSON.parse(localStorage.getItem(target)) || {};
 
       if(getComputedStyle(li).color === 'rgb(66, 139, 202)') {
         li.style.color = 'rgb(202, 139, 66)';
-        (autoEquipItems[rank] ||= []).push(name);
+        (items[rank] ||= []).push(name);
       } else {
         li.style.color = 'rgb(66, 139, 202)';
-        const index = autoEquipItems[rank].indexOf(name);
+        const index = items[rank].indexOf(name);
         if (index !== -1){
-          autoEquipItems[rank].splice(index,1);
+          items[rank].splice(index,1);
         }
       }
-      localStorage.setItem('autoEquipItems', JSON.stringify(autoEquipItems));
-      console.log(autoEquipItems[rank]);
+
+      localStorage.setItem(target, JSON.stringify(items));
+      console.log(items[rank]);
     }
   })();
   //-- ここまで --//
@@ -1932,7 +1989,7 @@
       const hasInfo = elm.dataset.rank !== undefined;
       const isRefreshed = refreshedCells.includes(elm);
       if(refreshAll || !hasInfo || isRefreshed) {
-        const { col, row } = elm.dataset;
+        const { row, col } = elm.dataset;
         const url = `https://donguri.5ch.net/teambattle?r=${row}&c=${col}`;
         fetch(url)
           .then(res =>
@@ -2217,16 +2274,20 @@
     }
     rank = rank
       .replace('エリート','e')
-      .replace(/.+から|\w+-|まで|だけ|\s|\[|\]/g,'');
+      .replace(/.+から|\w+-|まで|だけ|\s|\[|\]|\|/g,'');
     const autoEquipItems = JSON.parse(localStorage.getItem('autoEquipItems')) || {};
     if (autoEquipItems[rank] && !autoEquipItems[rank]?.includes(currentEquipName)) {
       if (autoEquipItems[rank].length === 0) {
         arenaChallenge(row, col);
         return;
       } else if (autoEquipItems[rank].length === 1) {
-        await setPresetItems(autoEquipItems[rank]);
+        await setPresetItems(autoEquipItems[rank][0]);
         arenaChallenge(row, col);
         return;
+      } else if (settings.autoEquipRandomly) {
+        const index = Math.floor(Math.random() * autoEquipItems[rank].length);
+        await setPresetItems(autoEquipItems[rank][index]);
+        arenaChallenge(row, col);        
       } else {
         while (autoEquipDialog.firstChild) {
           autoEquipDialog.firstChild.remove();
@@ -2899,8 +2960,15 @@
           .replace('エリート','e')
           .replace(/.+から|\w+-|まで|だけ|\s|\[|\]|\|/g,'');
         const autoEquipItems = JSON.parse(localStorage.getItem('autoEquipItems')) || {};
-        if (autoEquipItems[rank]?.length > 0) {
-          await setPresetItems(autoEquipItems[rank]);
+        const autoEquipItemsAutojoin = JSON.parse(localStorage.getItem('autoEquipItemsAutojoin')) || {};
+
+        if (autoEquipItemsAutojoin[rank]?.length > 0) {
+          const index = Math.floor(Math.random() * autoEquipItemsAutojoin[rank].length);
+          await setPresetItems(autoEquipItemsAutojoin[rank][index]);
+          return [rank, 'success'];
+        } else  if (autoEquipItems[rank]?.length > 0) {
+          const index = Math.floor(Math.random() * autoEquipItems[rank].length);
+          await setPresetItems(autoEquipItems[rank][index]);
           return [rank, 'success'];
         } else {
           return [rank, 'noEquip'];
