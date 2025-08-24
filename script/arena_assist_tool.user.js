@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         donguri arena assist tool
-// @version      1.2.2c
+// @version      1.2.2d
 // @description  fix arena ui and add functions
 // @author       7234e634
 // @match        https://donguri.5ch.net/teambattle
@@ -1105,7 +1105,7 @@
       const link = document.createElement('a');
       link.style.color = '#666';
       link.style.textDecoration = 'underline';
-      link.textContent = 'arena assist tool - v1.2.2c';
+      link.textContent = 'arena assist tool - v1.2.2d';
       link.href = 'https://donguri-k.github.io/tools/arena-assist-tool';
       link.target = '_blank';
       const author = document.createElement('input');
@@ -1985,72 +1985,75 @@
 
 
     const cells = grid.querySelectorAll('.cell');
-    cells.forEach(elm => {
+    cells.forEach(async(elm) => {
       const hasInfo = elm.dataset.rank !== undefined;
       const isRefreshed = refreshedCells.includes(elm);
       if(refreshAll || !hasInfo || isRefreshed) {
-        const { row, col } = elm.dataset;
-        const url = `https://donguri.5ch.net/teambattle?r=${row}&c=${col}`;
-        fetch(url)
-          .then(res =>
-            res.ok?res.text():Promise.reject('res.ng')
-          )
-          .then(text => {
-            const doc = new DOMParser().parseFromString(text, 'text/html'),
-            h1 = doc?.querySelector('h1')?.textContent;
-            if(h1 !== 'どんぐりチーム戦い') return Promise.reject(`title.ng [${row}][${col}][${h1}]`);
-            const rank = doc.querySelector('small')?.textContent || '';
-            if(!rank) return Promise.reject(`rank.ng [${row}][${col}][${h1}]`);
-            const leader = doc.querySelector('strong')?.textContent || '',
-            shortenRank = rank.replace('[エリート]','e').replace('から','-').replace(/(まで|\[|\]|\||\s)/g,'');
-            const teamname = doc.querySelector('table').rows[1]?.cells[2].textContent;
-
-            const cell = elm.cloneNode();
-            if (currentViewMode === 'detail') {
-              const p = [document.createElement('p'), document.createElement('p')];
-              p[0].textContent = shortenRank;
-              p[1].textContent = leader;
-              p[0].style.margin = '0';
-              p[1].style.margin = '0';
-              cell.style.width = '100px';
-              cell.style.height = '60px';
-              cell.style.borderWidth = '3px';
-              cell.append(p[0],p[1]);
-            } else {
-              const p = document.createElement('p');
-              p.style.height = '28px';
-              p.style.width = '28px';
-              p.style.margin = '0';
-              p.style.display = 'flex';
-              p.style.alignItems = 'center';
-              p.style.lineHeight = '1';
-              p.style.justifyContent = 'center';
-              const str = shortenRank.replace(/\w+-|だけ/g,'');
-              p.textContent = str;
-              if (str.length === 3) p.style.fontSize = '14px';
-              if (str.length === 4) p.style.fontSize = '13px';
-              cell.append(p);
-            }
-            cell.style.overflow = 'hidden';
-            cell.dataset.rank = shortenRank;
-            cell.dataset.leader = leader;
-            cell.dataset.team = teamname;
-
-            if ('customColors' in settings && teamname in settings.customColors) {
-              cell.style.backgroundColor = '#' + settings.customColors[teamname];
-            }
-            const rgb = cell.style.backgroundColor.match(/\d+/g);
-            const brightness = 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
-            cell.style.color = brightness > 128 ? '#000' : '#fff';
-
-            cell.addEventListener('click', ()=>{
-              handleCellClick (cell);
-            });
-            elm.replaceWith(cell);
-          })
-          .catch(e=>console.error(e))
+        fetchSingleArenaInfo(elm)
       }
     })
+  }
+  async function fetchSingleArenaInfo(elm) {
+    try {
+      const { row, col } = elm.dataset;
+      const url = `https://donguri.5ch.net/teambattle?r=${row}&c=${col}`;
+      const res = await fetch(url);
+      if(!res.ok) throw new Error(res.status + ' res.ng');
+      const text = await res.text();
+      const doc = new DOMParser().parseFromString(text, 'text/html');
+      const h1 = doc?.querySelector('h1')?.textContent;
+      if(h1 !== 'どんぐりチーム戦い') throw new Error(`title.ng [${row}][${col}][${h1}]`);
+      const rank = doc.querySelector('small')?.textContent || '';
+      if(!rank) return Promise.reject(`rank.ng [${row}][${col}][${h1}]`);
+      const leader = doc.querySelector('strong')?.textContent || '';
+      const shortenRank = rank.replace('[エリート]','e').replace('から','-').replace(/(まで|\[|\]|\||\s)/g,'');
+      const teamname = doc.querySelector('table').rows[1]?.cells[2].textContent;
+
+      const cell = elm.cloneNode();
+      if (currentViewMode === 'detail') {
+        const p = [document.createElement('p'), document.createElement('p')];
+        p[0].textContent = shortenRank;
+        p[1].textContent = leader;
+        p[0].style.margin = '0';
+        p[1].style.margin = '0';
+        cell.style.width = '100px';
+        cell.style.height = '60px';
+        cell.style.borderWidth = '3px';
+        cell.append(p[0],p[1]);
+      } else {
+        const p = document.createElement('p');
+        p.style.height = '28px';
+        p.style.width = '28px';
+        p.style.margin = '0';
+        p.style.display = 'flex';
+        p.style.alignItems = 'center';
+        p.style.lineHeight = '1';
+        p.style.justifyContent = 'center';
+        const str = shortenRank.replace(/\w+-|だけ/g,'');
+        p.textContent = str;
+        if (str.length === 3) p.style.fontSize = '14px';
+        if (str.length === 4) p.style.fontSize = '13px';
+        cell.append(p);
+      }
+      cell.style.overflow = 'hidden';
+      cell.dataset.rank = shortenRank;
+      cell.dataset.leader = leader;
+      cell.dataset.team = teamname;
+
+      if ('customColors' in settings && teamname in settings.customColors) {
+        cell.style.backgroundColor = '#' + settings.customColors[teamname];
+      }
+      const rgb = cell.style.backgroundColor.match(/\d+/g);
+      const brightness = 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
+      cell.style.color = brightness > 128 ? '#000' : '#fff';
+
+      cell.addEventListener('click', ()=>{
+        handleCellClick (cell);
+      });
+      elm.replaceWith(cell);
+    } catch(e) {
+      console.error(e)
+    }
   }
 
   function addCustomColor() {
@@ -2337,8 +2340,8 @@
       const text = await response.text();
       arenaResult.innerText = text;
 
+      const lastLine = text.trim().split('\n').pop();
       if(text.includes('\n')) {
-        const lastLine = text.trim().split('\n').pop();
         lastLine + '\n' + text;
         const p = document.createElement('p');
         p.textContent = lastLine;
@@ -2359,6 +2362,12 @@
       }, 0);
       arenaResult.style.display = '';
 
+      if (lastLine === 'リーダーになった' || lastLine.includes('は新しいアリーナリーダーです。')) {
+        if (!settings.teamColor) return;
+        const cell = document.querySelector(`div[data-row="${row}"][data-col="${col}"]`);
+        cell.style.background = '#' + settings.teamColor;
+        fetchSingleArenaInfo(cell);
+      }
     } catch (e) {
       arenaResult.innerText = e;
       arenaResult.show();
@@ -2627,7 +2636,6 @@
 
         regions[cellType] = regions[cellType]
           .filter(e => !excludeSet.has(e.join(',')));
-        console.log(excludeSet)
         for (const region of regions[cellType]) {
           let errorCount = 0;
           let next;
@@ -2666,6 +2674,7 @@
             } else if (messageType === 'reset') {
               processType = 'break';
             } else if (messageType in regions) {
+              excludeSet.add(region.join(','));
               if (messageType === cellType) {
                 processType = 'continue';
               } else if (messageType === 'nonAdjacent') {
@@ -2676,11 +2685,9 @@
                 processType = 'break';
               } else if (messageType === 'capitalAdjacent') {
                 cellType = 'capitalAdjacent';
-                excludeSet.add(region.join(','));
                 processType = 'break';
               } else if (messageType === 'mapEdge') {
                 cellType = 'mapEdge';
-                excludeSet.add(region.join(','));
                 processType = 'break';
               }
             }
@@ -2764,48 +2771,7 @@
         }
       }
     }
-    /*
-    function _challenge(index = 0) {
-      if(!dialog.open) return;
-      const body = `row=${regions[index][0]}&col=${regions[index][1]}`;
-      fetch('/teamchallenge', {
-        method: 'POST',
-        body: body,
-        headers: headers
-      })
-      .then(response => response.ok ? response.text() : Promise.reject(`res.ng [${response.status}]`))
-      .catch(error => error)
-      .then(text => {
-          const lastLine = text.trim().split('\n').pop();
-          let message = lastLine;
-          let nextStep = [0, interval()];
-          if (lastLine.startsWith('装備している')
-            || lastLine.includes('あなたのチームは首都を持っていないため、他のチームの首都に攻撃できません。')
-          || lastLine.includes('このマスには攻撃できません')
-          ) {
-            // 装備している防具と武器が力不足です。
-            // 装備している防具と武器が強すぎます
-            // 装備しているものは改造が多すぎます。改造の少ない他のものをお試しください
-            nextStep = [index + 1, 2];
-          } else if (messageType.retry.some(v => lastLine.includes(v))) {
-            nextStep = [index, 20];
-          } else if (messageType.reset.some(v => lastLine.includes(v))) { // 発生しない?
-            nextStep = [0, 2];
-          } else if (messageType.quit.some(v => lastLine.includes(v))) {
-            logMessage(regions[index], '', `[停止] ${lastLine}`);
-            return;
-          } else if (text.startsWith('アリーナチャレンジ開始')){
-            message = '[成功] ' + lastLine;
-          } else if (lastLine.length > 100) {
-            message = 'どんぐりシステム';
-            nextStep = [index, 2];
-          }
-          
-          logMessage(regions[index], `next(${nextStep[1]}s): ${regions[nextStep[0]]}`, message);
-          challengeTimeoutId = setTimeout(() => challenge(nextStep[0]), 1000 * nextStep[1]);
-        });
-    }
-    */
+
     async function getRegions () {
       try {
         const res = await fetch('');
